@@ -24,7 +24,7 @@ def download_streetview_images(start, end, num_points, api_key, output_dir="stre
     base_url = "https://maps.googleapis.com/maps/api/streetview"
     
     params = {
-        "size": "640x640",
+        "size": "640x640", #maximum is 640 by 640
         "fov": 65, #lower number = more zoom in 
         "heading": 0,
         "pitch": 0,
