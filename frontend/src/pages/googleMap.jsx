@@ -5,9 +5,6 @@ import InteractiveMap from "../components/interactiveMap";
 
 export default function GoogleMap() {
 
-  useEffect(() => {
-  }, []);
-
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>Google Map</h1>

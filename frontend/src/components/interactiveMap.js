@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
-
+import { APIProvider, Map, Marker  } from '@vis.gl/react-google-maps';
+import CustomMarker from "./customMarker";
 const center = {
   lat: 37.7749, // Default to San Francisco
   lng: -122.4194,
@@ -9,7 +9,7 @@ const center = {
 const InteractiveMap = () => {
   const [markers, setMarkers] = useState([]);
   const [hoveredMarker, setHoveredMarker] = useState(null);
-  
+      
   useEffect(() => {
     setMarkers(
       [
@@ -51,33 +51,15 @@ const InteractiveMap = () => {
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <Map defaultCenter={center} defaultZoom={15} gestureHandling={"greedy"} disableDefaultUI={true}>
         {markers.map((marker, index) => (
-          <Marker
+          <CustomMarker
             key={index}
             position={{ lat: parseFloat(marker.lat), lng: parseFloat(marker.lng) }} // Convert to float
             icon={{
               url: `http://maps.google.com/mapfiles/ms/icons/${getMarkerColor(marker.class)}-dot.png`,
             }}
-            onMouseOver={() => setHoveredMarker(marker)}
-            onMouseOut={() => setHoveredMarker(null)}
+            info = {marker}
           />
         ))}
-        {/* Display latitude and longitude when hovering */}
-        {hoveredMarker && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: "20px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              backgroundColor: "white",
-              padding: "8px",
-              borderRadius: "5px",
-              boxShadow: "0px 0px 5px rgba(0,0,0,0.2)",
-            }}
-          >
-            {`${hoveredMarker.class}: (Lat: ${hoveredMarker.lat}, Lng: ${hoveredMarker.lng})`}
-          </div>
-        )}
       </Map>
     </APIProvider>
   );
