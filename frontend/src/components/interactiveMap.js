@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { APIProvider, Map, Marker  } from '@vis.gl/react-google-maps';
 import CustomMarker from "./customMarker";
+import CarMarker from "./carMarker";
+
 const center = {
   lat: 37.7749, // Default to San Francisco
   lng: -122.4194,
@@ -28,6 +30,10 @@ const InteractiveMap = ({ markers }) => {
   return (
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <Map defaultCenter={position} defaultZoom={15} gestureHandling={"greedy"} disableDefaultUI={true}>
+        <CarMarker
+              position={center}
+        />
+        
         {Array.isArray(markers) && markers.map((marker, index) => (
           <CustomMarker
             key={index}
