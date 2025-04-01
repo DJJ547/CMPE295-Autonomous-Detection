@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import data from '../../mock_data.json';
+import lineChartData from '../../mock/bar_chart_data.json';
 
 const LineChartComponent = () => (
   <div className="bg-white rounded shadow p-4">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import data from '../../mock_data.json';
+import pieChartData from '../../mock/bar_chart_data.json';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658'];
 
