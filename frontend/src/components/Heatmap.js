@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
-import mockDataPoints from '../../mock/heatmap_data.jsonm'; // Import the JSON data
+import mockDataPoints from '../mock/heatmap_data.json'; // Import the JSON data
 
 
 const center = { lat: 37.7749, lng: -122.4194 }; // San Francisco
