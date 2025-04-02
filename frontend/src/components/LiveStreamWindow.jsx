@@ -13,10 +13,10 @@ const LiveStreamWindow = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const [startLat, setStartLat] = useState('');
-  const [startLng, setStartLng] = useState('');
-  const [endLat, setEndLat] = useState('');
-  const [endLng, setEndLng] = useState('');
+  const [startLatInput, setStartLatInput] = useState('');
+  const [startLngInput, setStartLngInput] = useState('');
+  const [endLatInput, setEndLatInput] = useState('');
+  const [endLngInput, setEndLngInput] = useState('');
   const [numPoints, setNumPoints] = useState('');
   const [params, setParams] = useState(null);
 
@@ -34,14 +34,14 @@ const LiveStreamWindow = () => {
       try {
         const res = await axios.get(`${process.env.REACT_APP_LOCALHOST}api/stream`, {
           params: {
-            startLat: params.startLat,
-            startLng: params.startLng,
-            endLat: params.endLat,
-            endLng: params.endLng,
+            startLatInput: params.startLatInput,
+            startLngInput: params.startLngInput,
+            endLatInput: params.endLatInput,
+            endLngInput: params.endLngInput,
             num_points: params.points,
           },
         });
-        console.log('S3 image URLs:', res.data);
+        console.log('S3 image URLs and coordinates:', res.data);
         setImageList(res.data);
         setCurrentIndex(0);
         setIsPlaying(true);
@@ -66,13 +66,13 @@ const LiveStreamWindow = () => {
   }, [isPlaying, maxLen]);
 
   const handleSubmit = () => {
-    if (!startLat || !startLng || !endLat || !endLng || !numPoints) return;
+    if (!startLatInput || !startLngInput || !endLatInput || !endLngInput || !numPoints) return;
 
     setParams({
-      startLat: parseFloat(startLat).toFixed(6),
-      startLng: parseFloat(startLng).toFixed(6),
-      endLat: parseFloat(endLat).toFixed(6),
-      endLng: parseFloat(endLng).toFixed(6),
+      startLatInput: parseFloat(startLatInput).toFixed(6),
+      startLngInput: parseFloat(startLngInput).toFixed(6),
+      endLatInput: parseFloat(endLatInput).toFixed(6),
+      endLngInput: parseFloat(endLngInput).toFixed(6),
       points: numPoints,
     });
   };
@@ -97,7 +97,7 @@ const LiveStreamWindow = () => {
           <Grid.Column mobile={16} tablet={10} computer={10}>
             <Image
               src={
-                imageList[direction][currentIndex] ||
+                imageList?.[direction]?.[currentIndex]?.url ||
                 '/static/images/placeholder.jpg'
               }
               fluid
@@ -119,8 +119,8 @@ const LiveStreamWindow = () => {
             step="0.000001"
             label="Start Latitude"
             placeholder="e.g., 37.774900"
-            value={startLat}
-            onChange={(e) => setStartLat(e.target.value)}
+            value={startLatInput}
+            onChange={(e) => setStartLatInput(e.target.value)}
           />
           <Form.Field
             control={Input}
@@ -128,8 +128,8 @@ const LiveStreamWindow = () => {
             step="0.000001"
             label="Start Longitude"
             placeholder="e.g., -122.419400"
-            value={startLng}
-            onChange={(e) => setStartLng(e.target.value)}
+            value={startLngInput}
+            onChange={(e) => setStartLngInput(e.target.value)}
           />
           <Form.Field
             control={Input}
@@ -137,8 +137,8 @@ const LiveStreamWindow = () => {
             step="0.000001"
             label="End Latitude"
             placeholder="e.g., 37.804900"
-            value={endLat}
-            onChange={(e) => setEndLat(e.target.value)}
+            value={endLatInput}
+            onChange={(e) => setEndLatInput(e.target.value)}
           />
           <Form.Field
             control={Input}
@@ -146,8 +146,8 @@ const LiveStreamWindow = () => {
             step="0.000001"
             label="End Longitude"
             placeholder="e.g., -122.271100"
-            value={endLng}
-            onChange={(e) => setEndLng(e.target.value)}
+            value={endLngInput}
+            onChange={(e) => setEndLngInput(e.target.value)}
           />
           <Form.Field
             control={Input}

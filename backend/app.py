@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from flask_socketio import SocketIO
+# from flask_socketio import SocketIO
 from routes.home import home_bp  # Import the Blueprint
 from routes.test import test_bp
 from routes.google_streetview import streetview_bp

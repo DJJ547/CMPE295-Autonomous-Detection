@@ -60,10 +60,10 @@ def delete_s3_folder(bucket_name, folder_prefix):
 # num_points = 35
 @streetview_bp.route('/api/stream', methods=['GET'])
 def stream_all_images():
-    startLat = float(request.args.get('startLat'))
-    startLng = float(request.args.get('startLng'))
-    endLat = float(request.args.get('endLat'))
-    endLng = float(request.args.get('endLng'))
+    startLat = float(request.args.get('startLatInput'))
+    startLng = float(request.args.get('startLngInput'))
+    endLat = float(request.args.get('endLatInput'))
+    endLng = float(request.args.get('endLngInput'))
     num_points = int(request.args.get('num_points'))
 
     coords = generate_coordinates(startLat, startLng, endLat, endLng, num_points)
@@ -71,7 +71,7 @@ def stream_all_images():
     api_key = os.getenv("GOOGLE_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
     s3_folder = "live_stream"
-    delete_s3_folder(bucket_name, s3_folder)  # 🔥 Clear old images
+    delete_s3_folder(bucket_name, s3_folder)  # Clear old images to avoid overhead
 
     # Customize these parameters
     # output_dir = Change output folder name
@@ -120,7 +120,7 @@ def stream_all_images():
                 s3_url = upload_file_to_s3(image_path, bucket_name, s3_key)
 
                 if s3_url:
-                    image_urls[direction].append(s3_url)
+                    image_urls[direction].append({"url":s3_url, "lat":lat, "lon": lon})
             else:
                 print(f"Failed to fetch {direction} image at coordinate {idx + 1}")
 

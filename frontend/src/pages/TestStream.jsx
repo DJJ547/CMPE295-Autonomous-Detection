@@ -1,5 +1,5 @@
 import React from "react";
-import LivestreamWindow from "../components/LiveStreamWindow"; // adjust the path if needed
+import LivestreamWindow from "../components/LiveStreamWindow";
 import { Container, Menu } from "semantic-ui-react";
 
 const TestStream = () => {
