@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Tab, Image, Segment, Grid, Input, Form, Button, Icon } from 'semantic-ui-react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import {
+  Tab,
+  Image,
+  Segment,
+  Grid,
+  Input,
+  Form,
+  Button,
+  Icon,
+} from "semantic-ui-react";
+import axios from "axios";
 
-const LiveStreamWindow = () => {
+const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [imageList, setImageList] = useState({
     front: [],
     back: [],
@@ -10,14 +19,15 @@ const LiveStreamWindow = () => {
     right: [],
   });
 
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const [startLatInput, setStartLatInput] = useState('');
-  const [startLngInput, setStartLngInput] = useState('');
-  const [endLatInput, setEndLatInput] = useState('');
-  const [endLngInput, setEndLngInput] = useState('');
-  const [numPoints, setNumPoints] = useState('');
+  const [startLatInput, setStartLatInput] = useState("");
+  const [startLngInput, setStartLngInput] = useState("");
+  const [endLatInput, setEndLatInput] = useState("");
+  const [endLngInput, setEndLngInput] = useState("");
+  const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
 
   const maxLen = Math.max(
@@ -32,21 +42,24 @@ const LiveStreamWindow = () => {
 
     const fetchImages = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_LOCALHOST}api/stream`, {
-          params: {
-            startLatInput: params.startLatInput,
-            startLngInput: params.startLngInput,
-            endLatInput: params.endLatInput,
-            endLngInput: params.endLngInput,
-            num_points: params.points,
-          },
-        });
-        console.log('S3 image URLs and coordinates:', res.data);
+        const res = await axios.get(
+          `${process.env.REACT_APP_LOCALHOST}api/stream`,
+          {
+            params: {
+              startLatInput: params.startLatInput,
+              startLngInput: params.startLngInput,
+              endLatInput: params.endLatInput,
+              endLngInput: params.endLngInput,
+              num_points: params.points,
+            },
+          }
+        );
+        console.log("S3 image URLs and coordinates:", res.data);
         setImageList(res.data);
         setCurrentIndex(0);
         setIsPlaying(true);
       } catch (error) {
-        console.error('Failed to fetch images:', error);
+        console.error("Failed to fetch images:", error);
       }
     };
 
@@ -55,18 +68,44 @@ const LiveStreamWindow = () => {
 
   useEffect(() => {
     if (!isPlaying || maxLen === 0) return;
-
+  
+    let isMounted = true;
+  
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) =>
-        prevIndex + 1 < maxLen ? prevIndex + 1 : 0
-      );
+      setCurrentIndex((prevIndex) => {
+        if (prevIndex + 1 < maxLen) {
+          const nextIndex = prevIndex + 1;
+  
+          const image = imageList?.[directions[activeTabIndex]]?.[nextIndex];
+          if (image && isMounted) {
+            setCarLat?.(image.lat);
+            setCarLng?.(image.lon);
+          }
+  
+          return nextIndex;
+        } else {
+          setIsPlaying(false);
+          return prevIndex;
+        }
+      });
     }, 1500);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, maxLen]);
+  
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isPlaying, maxLen, activeTabIndex, imageList, setCarLat, setCarLng]);
+  
 
   const handleSubmit = () => {
-    if (!startLatInput || !startLngInput || !endLatInput || !endLngInput || !numPoints) return;
+    if (
+      !startLatInput ||
+      !startLngInput ||
+      !endLatInput ||
+      !endLngInput ||
+      !numPoints
+    )
+      return;
 
     setParams({
       startLatInput: parseFloat(startLatInput).toFixed(6),
@@ -87,7 +126,7 @@ const LiveStreamWindow = () => {
     setCurrentIndex((prev) => Math.min(prev + 1, maxLen - 1));
   };
 
-  const directions = ['front', 'back', 'left', 'right'];
+  const directions = ["front", "back", "left", "right"];
 
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
@@ -98,7 +137,7 @@ const LiveStreamWindow = () => {
             <Image
               src={
                 imageList?.[direction]?.[currentIndex]?.url ||
-                '/static/images/placeholder.jpg'
+                "/static/images/placeholder.jpg"
               }
               fluid
               bordered
@@ -161,23 +200,39 @@ const LiveStreamWindow = () => {
         </Form.Group>
       </Form>
 
-      <Tab menu={{ pointing: true }} panes={panes} />
+      <Tab
+        menu={{ pointing: true }}
+        panes={panes}
+        activeIndex={activeTabIndex}
+        onTabChange={(e, { activeIndex }) => setActiveTabIndex(activeIndex)}
+      />
 
       {maxLen > 0 && (
         <Segment textAlign="center">
-          <Button icon labelPosition="left" onClick={handlePrev} disabled={currentIndex === 0}>
+          <Button
+            icon
+            labelPosition="left"
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+          >
             <Icon name="arrow left" />
             Previous
           </Button>
           <Button icon onClick={() => setIsPlaying(!isPlaying)}>
-            <Icon name={isPlaying ? 'pause' : 'play'} />
+            <Icon name={isPlaying ? "pause" : "play"} />
           </Button>
-          <Button icon labelPosition="right" onClick={handleNext} disabled={currentIndex === maxLen - 1}>
+          <Button
+            icon
+            labelPosition="right"
+            onClick={handleNext}
+            disabled={currentIndex === maxLen - 1}
+          >
             Next
             <Icon name="arrow right" />
           </Button>
-          <p style={{ marginTop: '1em' }}>
-            Viewing image <strong>{currentIndex + 1}</strong> of <strong>{maxLen}</strong>
+          <p style={{ marginTop: "1em" }}>
+            Viewing image <strong>{currentIndex + 1}</strong> of{" "}
+            <strong>{maxLen}</strong>
           </p>
         </Segment>
       )}
