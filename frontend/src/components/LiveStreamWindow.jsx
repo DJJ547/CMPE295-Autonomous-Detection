@@ -74,15 +74,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
         if (prevIndex + 1 < maxLen) {
-          const nextIndex = prevIndex + 1;
-  
-          const image = imageList?.[directions[activeTabIndex]]?.[nextIndex];
-          if (image && isMounted) {
-            setCarLat?.(image.lat);
-            setCarLng?.(image.lon);
-          }
-  
-          return nextIndex;
+          return prevIndex + 1;
         } else {
           setIsPlaying(false);
           return prevIndex;
@@ -94,7 +86,18 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [isPlaying, maxLen, activeTabIndex, imageList, setCarLat, setCarLng]);
+  }, [isPlaying, maxLen]);
+  
+  useEffect(() => {
+    if (!imageList || !directions[activeTabIndex]) return;
+  
+    const image = imageList[directions[activeTabIndex]]?.[currentIndex];
+    if (image && image.lat !== undefined && image.lon !== undefined) {
+      setCarLat?.(image.lat);
+      setCarLng?.(image.lon);
+    }
+  }, [currentIndex, activeTabIndex, imageList, setCarLat, setCarLng]);
+  
   
 
   const handleSubmit = () => {
@@ -131,25 +134,25 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
     render: () => (
-      <Tab.Pane attached={false}>
-        <Grid centered>
-          <Grid.Column mobile={16} tablet={10} computer={10}>
-            <Image
-              src={
-                imageList?.[direction]?.[currentIndex]?.url ||
-                "/static/images/placeholder.jpg"
-              }
-              fluid
-              bordered
-            />
-          </Grid.Column>
-        </Grid>
+      <Tab.Pane attached={false} style={{ height: "100%" }}>
+        <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Image
+            src={
+              imageList?.[direction]?.[currentIndex]?.url ||
+              "/static/images/placeholder.jpg"
+            }
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            bordered
+          />
+        </div>
       </Tab.Pane>
     ),
   }));
+  
 
   return (
-    <Segment raised>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <Segment raised style={{ flex: 1, overflowY: "auto" }}>
       <Form onSubmit={handleSubmit}>
         <Form.Group widths="equal">
           <Form.Field
@@ -237,6 +240,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
         </Segment>
       )}
     </Segment>
+    </div>
   );
 };
 

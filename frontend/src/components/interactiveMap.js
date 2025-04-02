@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { APIProvider, Map, Marker  } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 import CustomMarker from "./customMarker";
 import CarMarker from "./carMarker";
 
@@ -8,42 +8,49 @@ const center = {
   lng: -122.4194,
 };
 
-const InteractiveMap = ({ markers }) => {
+const InteractiveMap = ({ carLat, carLng, markers }) => {
   const [position, setPosition] = useState(center);
   const speed = 1;
-      
 
-
-   // Function to determine marker color based on label
+  // Function to determine marker color based on label
   const getMarkerColor = (label) => {
     const colorMap = {
       "road-damage": "red",
-      "graffiti": "orange",
-      "encampment": "yellow",
+      graffiti: "orange",
+      encampment: "yellow",
     };
 
     return colorMap[label] || "white";
   };
 
-
-
   return (
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-      <Map defaultCenter={position} defaultZoom={15} gestureHandling={"greedy"} disableDefaultUI={true}>
-        <CarMarker
-              position={center}
-        />
-        
-        {Array.isArray(markers) && markers.map((marker, index) => (
-          <CustomMarker
-            key={index}
-            position={{ lat: parseFloat(marker.lat), lng: parseFloat(marker.lng) }} // Convert to float
-            icon={{
-              url: `http://maps.google.com/mapfiles/ms/icons/${getMarkerColor(marker.class)}-dot.png`,
-            }}
-            info = {marker}
-          />
-        ))}
+      <Map
+        defaultCenter={position}
+        defaultZoom={15}
+        gestureHandling={"greedy"}
+        disableDefaultUI={true}
+      >
+        {carLat !== null && carLng !== null && (
+          <CarMarker position={{ lat: carLat, lng: carLng }} />
+        )}
+
+        {Array.isArray(markers) &&
+          markers.map((marker, index) => (
+            <CustomMarker
+              key={index}
+              position={{
+                lat: parseFloat(marker.lat),
+                lng: parseFloat(marker.lng),
+              }} // Convert to float
+              icon={{
+                url: `http://maps.google.com/mapfiles/ms/icons/${getMarkerColor(
+                  marker.class
+                )}-dot.png`,
+              }}
+              info={marker}
+            />
+          ))}
       </Map>
     </APIProvider>
   );
