@@ -1,0 +1,7 @@
+[
+    { "type": "Cars", "value": 400 },
+    { "type": "Trucks", "value": 300 },
+    { "type": "Bikes", "value": 200 },
+    { "type": "Buses", "value": 100 }
+  ]
+  

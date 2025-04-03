@@ -8,6 +8,7 @@ import GoogleMap from "./pages/googleMap";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import HeatmapPage from "./pages/HeatmapPage";
+import AnalyticsPage from './pages/AnalyticsPage';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/test" element={<Test />} />
         <Route path="/googleMap" element={<GoogleMap />} />
         <Route path="/heatmap" element={<HeatmapPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
       </Routes>
     </div>
   );
