@@ -5,6 +5,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@material-tailwind/react": "^2.1.10",
     "@mui/icons-material": "^6.4.3",
     "@mui/material": "^6.4.3",
     "@vis.gl/react-google-maps": "^1.5.2",

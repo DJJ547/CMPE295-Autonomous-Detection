@@ -3,11 +3,12 @@ import {
   Tab,
   Image,
   Segment,
-  Grid,
   Input,
   Form,
   Button,
   Icon,
+  Loader,
+  Modal,
 } from "semantic-ui-react";
 import axios from "axios";
 
@@ -18,6 +19,10 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     left: [],
     right: [],
   });
+
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -57,6 +62,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
         console.log("S3 image URLs and coordinates:", res.data);
         setImageList(res.data);
         setCurrentIndex(0);
+        setLoading(false);
         setIsPlaying(true);
       } catch (error) {
         console.error("Failed to fetch images:", error);
@@ -68,9 +74,9 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   useEffect(() => {
     if (!isPlaying || maxLen === 0) return;
-  
+
     let isMounted = true;
-  
+
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
         if (prevIndex + 1 < maxLen) {
@@ -81,24 +87,22 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
         }
       });
     }, 1500);
-  
+
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
   }, [isPlaying, maxLen]);
-  
+
   useEffect(() => {
     if (!imageList || !directions[activeTabIndex]) return;
-  
+
     const image = imageList[directions[activeTabIndex]]?.[currentIndex];
     if (image && image.lat !== undefined && image.lon !== undefined) {
       setCarLat?.(image.lat);
       setCarLng?.(image.lon);
     }
   }, [currentIndex, activeTabIndex, imageList, setCarLat, setCarLng]);
-  
-  
 
   const handleSubmit = () => {
     if (
@@ -110,6 +114,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     )
       return;
 
+    setLoading(true);
     setParams({
       startLatInput: parseFloat(startLatInput).toFixed(6),
       startLngInput: parseFloat(startLngInput).toFixed(6),
@@ -117,6 +122,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       endLngInput: parseFloat(endLngInput).toFixed(6),
       points: numPoints,
     });
+    setModalOpen(false);
   };
 
   const handlePrev = () => {
@@ -134,112 +140,233 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
     render: () => (
-      <Tab.Pane attached={false} style={{ height: "100%" }}>
-        <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <Image
-            src={
-              imageList?.[direction]?.[currentIndex]?.url ||
-              "/static/images/placeholder.jpg"
-            }
-            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-            bordered
-          />
+      <Tab.Pane
+        attached={false}
+        style={{ height: "100%", position: "relative" }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+          }}
+        >
+          {loading ? (
+            <Loader active inline="centered" size="huge" />
+          ) : (
+            <Image
+              src={
+                imageList?.[direction]?.[currentIndex]?.url ||
+                "/static/images/placeholder.jpg"
+              }
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
+              bordered
+            />
+          )}
+
+          <Button
+            icon
+            onClick={() => setFullscreenOpen(true)}
+            style={{
+              position: "absolute",
+              bottom: "1rem",
+              right: "1rem",
+              zIndex: 10,
+            }}
+          >
+            <Icon name="expand" />
+          </Button>
         </div>
       </Tab.Pane>
     ),
   }));
-  
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-    <Segment raised style={{ flex: 1, overflowY: "auto" }}>
-      <Form onSubmit={handleSubmit}>
-        <Form.Group widths="equal">
-          <Form.Field
-            control={Input}
-            type="number"
-            step="0.000001"
-            label="Start Latitude"
-            placeholder="e.g., 37.774900"
-            value={startLatInput}
-            onChange={(e) => setStartLatInput(e.target.value)}
-          />
-          <Form.Field
-            control={Input}
-            type="number"
-            step="0.000001"
-            label="Start Longitude"
-            placeholder="e.g., -122.419400"
-            value={startLngInput}
-            onChange={(e) => setStartLngInput(e.target.value)}
-          />
-          <Form.Field
-            control={Input}
-            type="number"
-            step="0.000001"
-            label="End Latitude"
-            placeholder="e.g., 37.804900"
-            value={endLatInput}
-            onChange={(e) => setEndLatInput(e.target.value)}
-          />
-          <Form.Field
-            control={Input}
-            type="number"
-            step="0.000001"
-            label="End Longitude"
-            placeholder="e.g., -122.271100"
-            value={endLngInput}
-            onChange={(e) => setEndLngInput(e.target.value)}
-          />
-          <Form.Field
-            control={Input}
-            type="number"
-            label="Number of Points"
-            placeholder="e.g., 10"
-            value={numPoints}
-            onChange={(e) => setNumPoints(e.target.value)}
-          />
-          <Form.Field control={Button} content="Update Stream" primary />
-        </Form.Group>
-      </Form>
+      <Segment
+        raised
+        style={{ flex: 1, overflowY: "auto", position: "relative" }}
+      >
+        <Button
+          icon
+          labelPosition="left"
+          onClick={() => setModalOpen(true)}
+          style={{ marginBottom: "1rem" }}
+        >
+          <Icon name="settings" />
+          Show Stream Controls
+        </Button>
 
-      <Tab
-        menu={{ pointing: true }}
-        panes={panes}
-        activeIndex={activeTabIndex}
-        onTabChange={(e, { activeIndex }) => setActiveTabIndex(activeIndex)}
-      />
+        <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
+          <Modal.Header>
+            Stream Controls
+            <Icon
+              name="close"
+              onClick={() => setModalOpen(false)}
+              style={{
+                float: "right",
+                cursor: "pointer",
+              }}
+            />
+          </Modal.Header>
+          <Modal.Content>
+            <Form onSubmit={handleSubmit}>
+              <Form.Field
+                control={Input}
+                type="number"
+                step="0.000001"
+                label="Start Latitude"
+                placeholder="e.g., 37.774900"
+                value={startLatInput}
+                onChange={(e) => setStartLatInput(e.target.value)}
+              />
+              <Form.Field
+                control={Input}
+                type="number"
+                step="0.000001"
+                label="Start Longitude"
+                placeholder="e.g., -122.419400"
+                value={startLngInput}
+                onChange={(e) => setStartLngInput(e.target.value)}
+              />
+              <Form.Field
+                control={Input}
+                type="number"
+                step="0.000001"
+                label="End Latitude"
+                placeholder="e.g., 37.804900"
+                value={endLatInput}
+                onChange={(e) => setEndLatInput(e.target.value)}
+              />
+              <Form.Field
+                control={Input}
+                type="number"
+                step="0.000001"
+                label="End Longitude"
+                placeholder="e.g., -122.271100"
+                value={endLngInput}
+                onChange={(e) => setEndLngInput(e.target.value)}
+              />
+              <Form.Field
+                control={Input}
+                type="number"
+                label="Number of Points"
+                placeholder="e.g., 10"
+                value={numPoints}
+                onChange={(e) => setNumPoints(e.target.value)}
+              />
+              <Form.Field control={Button} content="Update Stream" primary />
+            </Form>
+          </Modal.Content>
+        </Modal>
 
-      {maxLen > 0 && (
-        <Segment textAlign="center">
-          <Button
-            icon
-            labelPosition="left"
-            onClick={handlePrev}
-            disabled={currentIndex === 0}
+        <Modal
+          open={fullscreenOpen}
+          onClose={() => setFullscreenOpen(false)}
+          size="fullscreen"
+          closeIcon
+          style={{
+            maxWidth: "70vw",
+            margin: "0 auto",
+            height: "90vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Modal.Header>Expanded Stream View</Modal.Header>
+          <Modal.Content
+            style={{
+              backgroundColor: "#f9f9f9",
+              height: "100%",
+              padding: 0,
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
-            <Icon name="arrow left" />
-            Previous
-          </Button>
-          <Button icon onClick={() => setIsPlaying(!isPlaying)}>
-            <Icon name={isPlaying ? "pause" : "play"} />
-          </Button>
-          <Button
-            icon
-            labelPosition="right"
-            onClick={handleNext}
-            disabled={currentIndex === maxLen - 1}
-          >
-            Next
-            <Icon name="arrow right" />
-          </Button>
-          <p style={{ marginTop: "1em" }}>
-            Viewing image <strong>{currentIndex + 1}</strong> of{" "}
-            <strong>{maxLen}</strong>
-          </p>
-        </Segment>
-      )}
-    </Segment>
+            <Tab
+              menu={{ pointing: true }}
+              panes={panes}
+              activeIndex={activeTabIndex}
+              onTabChange={(e, { activeIndex }) =>
+                setActiveTabIndex(activeIndex)
+              }
+            />
+            {maxLen > 0 && (
+              <Segment textAlign="center">
+                <Button
+                  icon
+                  labelPosition="left"
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                >
+                  <Icon name="arrow left" />
+                  Previous
+                </Button>
+                <Button icon onClick={() => setIsPlaying(!isPlaying)}>
+                  <Icon name={isPlaying ? "pause" : "play"} />
+                </Button>
+                <Button
+                  icon
+                  labelPosition="right"
+                  onClick={handleNext}
+                  disabled={currentIndex === maxLen - 1}
+                >
+                  Next
+                  <Icon name="arrow right" />
+                </Button>
+                <p style={{ marginTop: "1em" }}>
+                  Viewing image <strong>{currentIndex + 1}</strong> of{" "}
+                  <strong>{maxLen}</strong>
+                </p>
+              </Segment>
+            )}
+          </Modal.Content>
+        </Modal>
+
+        <Tab
+          menu={{ pointing: true }}
+          panes={panes}
+          activeIndex={activeTabIndex}
+          onTabChange={(e, { activeIndex }) => setActiveTabIndex(activeIndex)}
+        />
+
+        {maxLen > 0 && (
+          <Segment textAlign="center">
+            <Button
+              icon
+              labelPosition="left"
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+            >
+              <Icon name="arrow left" />
+              Previous
+            </Button>
+            <Button icon onClick={() => setIsPlaying(!isPlaying)}>
+              <Icon name={isPlaying ? "pause" : "play"} />
+            </Button>
+            <Button
+              icon
+              labelPosition="right"
+              onClick={handleNext}
+              disabled={currentIndex === maxLen - 1}
+            >
+              Next
+              <Icon name="arrow right" />
+            </Button>
+            <p style={{ marginTop: "1em" }}>
+              Viewing image <strong>{currentIndex + 1}</strong> of{" "}
+              <strong>{maxLen}</strong>
+            </p>
+          </Segment>
+        )}
+      </Segment>
     </div>
   );
 };
