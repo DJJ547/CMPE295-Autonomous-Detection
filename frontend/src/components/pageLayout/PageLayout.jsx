@@ -17,7 +17,7 @@ export default function PageLayout({ children }) {
       </div>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <div style={{ width: "18rem", flexShrink: 0, padding: "0.5rem" }}>
+        <div style={{ width: "15%", flexShrink: 0, padding: "0.5rem" }}>
           <Sidebar />
         </div>
 
