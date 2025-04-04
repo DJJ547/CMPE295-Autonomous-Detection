@@ -1,44 +1,106 @@
+import { Dropdown } from "semantic-ui-react";
 
 export default function Topbar() {
+  function logout() {
+    localStorage.clear();
+    window.location.href = "/login";
+  }
+
   return (
-    <nav
+    <div
       style={{
         backgroundColor: "#1f2937",
-        paddingTop: "1rem",
-        paddingBottom: "1rem",
+        padding: "0.5rem 2rem",
+        minHeight: "3.8rem",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
       }}
     >
+      <a
+        href="/"
+        style={{
+          color: "white",
+          fontSize: "1.8rem",
+          fontWeight: "bold",
+          textDecoration: "none",
+        }}
+      >
+        StreetGuard
+      </a>
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          maxWidth: "100%",
-          margin: "0 auto",
-          paddingLeft: "3rem",
-          paddingRight: "3rem",
+          alignItems: "center",
+          gap: "1rem",
         }}
       >
-        <a
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            textDecoration: "none",
-          }}
+        <Dropdown
+          item
+          simple
+          trigger={
+            <img
+              src="/static/images/notification-icon.png"
+              alt="Profile Icon"
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                cursor: "pointer",
+              }}
+            />
+          }
         >
-          <span
+          <Dropdown.Menu
             style={{
-              color: "white",
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              marginLeft: "0.5rem",
-              marginRight: "1rem",
+              right: 0,
+              left: "auto",
+              transform: "translateX(0%)",
             }}
           >
-            StreetGuard
-          </span>
-        </a>
+            <Dropdown.Item
+              text="Road damage detected!"
+              description="5 mins ago"
+            />
+            <Dropdown.Item text="Tent detected!" description="8 mins ago" />
+            <Dropdown.Item
+              text="Graffiti detected!"
+              description="30 mins ago"
+            />
+            <Dropdown.Divider />
+            <Dropdown.Item text="View More" icon="arrow right" />
+          </Dropdown.Menu>
+        </Dropdown>
+
+        <Dropdown
+          item
+          simple
+          trigger={
+            <img
+              src="/static/images/user-icon.png"
+              alt="Profile Icon"
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                cursor: "pointer",
+              }}
+            />
+          }
+        >
+          <Dropdown.Menu
+            style={{
+              right: 0,
+              left: "auto",
+              transform: "translateX(0%)",
+            }}
+          >
+            <Dropdown.Item disabled text="Asummers@gmail.com" />
+            <Dropdown.Divider />
+            <Dropdown.Item text="Logout" onClick={logout} />
+          </Dropdown.Menu>
+        </Dropdown>
       </div>
-    </nav>
+    </div>
   );
 }

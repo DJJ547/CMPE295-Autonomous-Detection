@@ -11,7 +11,7 @@ const Analytics = () => {
         display: "flex",
         flexDirection: "column", // ✅ fix: stack vertically
         width: "100%",
-        height: "100vh",
+        height: "92vh",
         gap: "20px",
       }}
     >
