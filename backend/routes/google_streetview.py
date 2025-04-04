@@ -60,6 +60,7 @@ def delete_s3_folder(bucket_name, folder_prefix):
 # num_points = 35
 @streetview_bp.route('/api/stream', methods=['GET'])
 def stream_all_images():
+    user_id = int(request.args.get('userId'))
     startLat = float(request.args.get('startLatInput'))
     startLng = float(request.args.get('startLngInput'))
     endLat = float(request.args.get('endLatInput'))
@@ -70,7 +71,7 @@ def stream_all_images():
 
     api_key = os.getenv("GOOGLE_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
-    s3_folder = "live_stream"
+    s3_folder = f'user{user_id}-livestream'
     delete_s3_folder(bucket_name, s3_folder)  # Clear old images to avoid overhead
 
     # Customize these parameters

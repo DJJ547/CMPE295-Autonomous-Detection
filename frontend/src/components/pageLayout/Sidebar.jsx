@@ -36,7 +36,7 @@ export default function Sidebar() {
           onClick={handleClick("/analytics")}
           style={{ marginBottom: "2.5rem" }}
         >
-          <Icon name="camera" size="large" />
+          <Icon name="chart bar" size="large" />
           <AnimatedButton>Analytics</AnimatedButton>
         </Menu.Item>
       </Menu>

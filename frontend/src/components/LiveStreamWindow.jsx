@@ -51,6 +51,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
           `${process.env.REACT_APP_LOCALHOST}api/stream`,
           {
             params: {
+              userId: localStorage.getItem("user_id"),
               startLatInput: params.startLatInput,
               startLngInput: params.startLngInput,
               endLatInput: params.endLatInput,

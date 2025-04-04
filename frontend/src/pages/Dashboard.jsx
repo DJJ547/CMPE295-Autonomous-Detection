@@ -32,7 +32,7 @@ const Dashboard = () => {
         display: "flex",
         flexDirection: "row",
         width: "100%",
-        height: "100vh",
+        height: "92vh",
         gap: "20px",
       }}
     >
