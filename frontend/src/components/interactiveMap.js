@@ -24,7 +24,7 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
   };
 
   return (
-    <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+    <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
       <Map
         defaultCenter={position}
         defaultZoom={15}
