@@ -2,19 +2,6 @@ import React, { useEffect, useState } from "react";
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import mockDataPoints from '../mock/heatmap_data.json'; // Import the JSON data
 
-import mockDataPoints from '../mock_data.json'; // Import the JSON data
-import { FormControl, InputLabel, Select, MenuItem, Box } from '@mui/material';
-
-// Add type property to each data point if it doesn't exist
-const dataPointsWithTypes = mockDataPoints.map(point => ({
-  ...point,
-  // If no type property exists, assign types based on weight for demonstration
-  type: point.type || (point.weight >= 4 ? 'road-damage' : 
-                       point.weight >= 3 ? 'encampment' : 'graffiti')
-}));
-
-// Get unique types from data
-const uniqueTypes = ['all', ...new Set(dataPointsWithTypes.map(point => point.type))];
 
 const center = { lat: 37.7749, lng: -122.4194 }; // San Francisco
 

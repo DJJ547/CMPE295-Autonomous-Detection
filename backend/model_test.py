@@ -1,13 +1,13 @@
 from ultralytics import YOLO
 
 # Load model
-model = YOLO("CMPE295-Autonomous-Detection/backend/models/graffiti.pt")  # adjust path if needed
+model = YOLO("models/graffiti.pt")  # Use relative path
 
 # Run inference on your test image
-results = model("CMPE295-Autonomous-Detection/backend/images/sample.png")
+results = model("images/original_14.jpg")  # Update this to match your image path
 
 # Show image with predictions
-results[0].show()  # ← This is the fix
+results[0].show()
 
 # Print detection info
 print(f"\nDetections found: {len(results[0].boxes)}")

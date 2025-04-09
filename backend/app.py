@@ -7,6 +7,9 @@ import os
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
+import boto3
+import tempfile
+
 # Import blueprints
 from routes.auth import auth_bp
 from routes.home import home_bp
@@ -51,6 +54,57 @@ def detect():
     result = detect_graffiti(image_path)
 
     return jsonify(result), 200
+
+@app.route('/detect-s3', methods=['POST'])
+def detect_s3():
+    # Check if S3 URL was provided
+    if not request.json or 'url' not in request.json:
+        return jsonify({"error": "No S3 URL provided"}), 400
+    
+    s3_url = request.json['url']
+    
+    # Parse S3 URL to get bucket and key
+    # Expected format: s3://bucket-name/path/to/file.jpg
+    if not s3_url.startswith('s3://'):
+        return jsonify({"error": "Invalid S3 URL format. Use s3://bucket-name/key"}), 400
+    
+    # Remove s3:// prefix and split into bucket and key
+    s3_path = s3_url[5:]
+    try:
+        bucket_name, s3_key = s3_path.split('/', 1)
+    except ValueError:
+        return jsonify({"error": "Invalid S3 URL format. Use s3://bucket-name/key"}), 400
+    
+    # Initialize S3 client
+    s3 = boto3.client(
+        "s3",
+        region_name=os.getenv("AWS_REGION"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
+    
+    try:
+        # Create temp file in static/uploads instead of system temp directory
+        filename = f"s3_temp_{os.path.basename(s3_key)}"
+        temp_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Download the file
+        s3.download_file(bucket_name, s3_key, temp_file_path)
+        
+        # Run detection on the downloaded image
+        result = detect_graffiti(temp_file_path)
+        
+        # Clean up temp file - use try/finally to ensure it gets deleted
+        try:
+            os.remove(temp_file_path)
+        except:
+            # If we can't delete it now, it's not critical - it's in our app folder
+            pass
+            
+        return jsonify(result), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Run the app
 if __name__ == '__main__':
