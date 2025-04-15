@@ -7,6 +7,9 @@ import numpy as np
 from flask import Blueprint, jsonify, request
 import boto3
 
+from detection_models import grounding_dino
+from utils  import mysql_db_utils
+
 streetview_bp = Blueprint('streetview', __name__)
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
@@ -38,8 +41,8 @@ def upload_file_to_s3(local_path, bucket_name, s3_key):
     except Exception as e:
         print(f"Failed to upload {local_path} to S3: {e}")
         return None
-    
-    
+
+
 def delete_s3_folder(bucket_name, folder_prefix):
     """
     Deletes all objects under a folder prefix in the given S3 bucket.
@@ -48,9 +51,12 @@ def delete_s3_folder(bucket_name, folder_prefix):
     try:
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder_prefix)
         if 'Contents' in response:
-            objects_to_delete = [{'Key': obj['Key']} for obj in response['Contents']]
-            s3.delete_objects(Bucket=bucket_name, Delete={'Objects': objects_to_delete})
-            print(f"Deleted {len(objects_to_delete)} objects from {folder_prefix}")
+            objects_to_delete = [{'Key': obj['Key']}
+                                 for obj in response['Contents']]
+            s3.delete_objects(Bucket=bucket_name, Delete={
+                              'Objects': objects_to_delete})
+            print(
+                f"Deleted {len(objects_to_delete)} objects from {folder_prefix}")
     except Exception as e:
         print(f"Error deleting S3 folder {folder_prefix}: {e}")
 
@@ -58,6 +64,8 @@ def delete_s3_folder(bucket_name, folder_prefix):
 # start_coord = (37.785215, -122.417924)
 # end_coord = (37.785821, -122.412989)
 # num_points = 35
+
+
 @streetview_bp.route('/api/stream', methods=['GET'])
 def stream_all_images():
     user_id = int(request.args.get('userId'))
@@ -67,12 +75,15 @@ def stream_all_images():
     endLng = float(request.args.get('endLngInput'))
     num_points = int(request.args.get('num_points'))
 
-    coords = generate_coordinates(startLat, startLng, endLat, endLng, num_points)
+    coords = generate_coordinates(
+        startLat, startLng, endLat, endLng, num_points)
 
     api_key = os.getenv("GOOGLE_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
-    s3_folder = f'user{user_id}-livestream'
-    delete_s3_folder(bucket_name, s3_folder)  # Clear old images to avoid overhead
+    s3_stream_root_folder_name = f'user{user_id}-livestream'
+    s3_detected_root_folder_name = 'detected'
+    # Clear old images to avoid overhead
+    delete_s3_folder(bucket_name, s3_stream_root_folder_name)
 
     # Customize these parameters
     # output_dir = Change output folder name
@@ -108,24 +119,46 @@ def stream_all_images():
                 "location": f"{lat},{lon}"
             }
 
-            response = requests.get("https://maps.googleapis.com/maps/api/streetview", params=params)
+            response = requests.get(
+                "https://maps.googleapis.com/maps/api/streetview", params=params)
 
             if response.status_code == 200:
                 image_name = f"{idx + 1}.jpg"
-                image_path = os.path.join(output_dir, image_name)
+                local_image_path = os.path.join(output_dir, image_name)
 
-                with open(image_path, "wb") as f:
+                with open(local_image_path, "wb") as f:
                     f.write(response.content)
 
-                s3_key = f"{s3_folder}/{direction}/{image_name}"
-                s3_url = upload_file_to_s3(image_path, bucket_name, s3_key)
+                # Run Grounding DINO detection
+                try:
+                    detected, bounding_boxes = grounding_dino.detect_objects(
+                        local_image_path, "graffiti on wall, pothole on road, tent on the side of street")
+                    
+                    if detected:
+                        s3_detected_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
+                        s3_detected_image_url = upload_file_to_s3(local_image_path, bucket_name, s3_detected_image_path)
+                        if s3_detected_image_url:
+                            mysql_db_utils.register_anomaly_to_db(lat, lon, s3_detected_image_url)
+                        
+                except Exception as e:
+                    print(f"Detection failed on {local_image_path}: {e}")
+                    detected, bounding_boxes = False, []
 
-                if s3_url:
-                    image_urls[direction].append({"url":s3_url, "lat":lat, "lon": lon})
+                s3_stream_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
+                s3_stream_image_url = upload_file_to_s3(local_image_path, bucket_name, s3_stream_image_path)
+
+                if s3_stream_image_url:
+                    image_urls[direction].append({
+                    "url": s3_stream_image_url,
+                    "lat": lat,
+                    "lon": lon,
+                    "detected": detected,
+                    "boxes": bounding_boxes if detected else []
+                })
             else:
-                print(f"Failed to fetch {direction} image at coordinate {idx + 1}")
+                print(
+                    f"Failed to fetch {direction} image at coordinate {idx + 1}")
 
             time.sleep(0.25)
 
     return jsonify(image_urls)
-    
