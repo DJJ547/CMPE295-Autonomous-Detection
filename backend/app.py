@@ -8,7 +8,7 @@ import os
 from routes.auth import auth_bp
 from routes.home import home_bp
 from routes.test import test_bp
-from routes.google_streetview import streetview_bp
+from backend.routes.google_streetview_api import streetview_bp
 
 from dotenv import load_dotenv
 load_dotenv()
