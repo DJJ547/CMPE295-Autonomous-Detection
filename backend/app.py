@@ -9,6 +9,7 @@ from routes.auth_api import auth_bp
 from routes.home import home_bp
 from routes.test import test_bp
 from routes.google_streetview_api import streetview_bp
+from routes.graphs_api import graphs_bp
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,6 +32,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(home_bp)
 app.register_blueprint(test_bp)
 app.register_blueprint(streetview_bp)
+app.register_blueprint(graphs_bp)
 
 # Run the app
 if __name__ == '__main__':

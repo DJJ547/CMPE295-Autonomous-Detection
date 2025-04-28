@@ -1,30 +1,60 @@
-import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import data from '../../mock/pie_chart_data.json'; // Ensure this is a valid array
+import React, { useEffect, useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend
+} from 'recharts';
+import { motion } from 'framer-motion';
+import LoadingSpinner from '../common/LoadingSpinner';
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658'];
+const LineChartComponent = () => {
+  const [lineData, setLineData] = useState([]);
+  const [error, setError] = useState(null);
 
-const PieChartComponent = () => {
-  if (!data || !Array.isArray(data)) {
-    return <div className="text-red-500">Error: Pie chart data is not loaded.</div>;
+  useEffect(() => {
+    fetch('/api/graphs/trends')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch line chart data');
+        }
+        return response.json();
+      })
+      .then(data => setLineData(data))
+      .catch(error => setError(error.message));
+  }, []);
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
+
+  if (!lineData.length) {
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="bg-white rounded shadow p-4">
-      <h2 className="text-xl font-semibold mb-2">Vehicle Type Distribution</h2>
-      <ResponsiveContainer width="100%" height={250}>
-        <PieChart>
-          <Pie data={data} dataKey="value" nameKey="type" outerRadius={80}>
-            {data.map((entry, index) => (
-              <Cell key={index} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
+    <motion.div 
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Monthly Trend of Anomalies</h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={lineData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="month" />
+          <YAxis />
           <Tooltip />
           <Legend />
-        </PieChart>
+          <Line type="monotone" dataKey="issues_detected" stroke="#8884d8" strokeWidth={3} />
+        </LineChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 };
 
-export default PieChartComponent;
+export default LineChartComponent;
