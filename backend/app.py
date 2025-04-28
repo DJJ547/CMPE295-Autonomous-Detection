@@ -11,10 +11,10 @@ import boto3
 import tempfile
 
 # Import blueprints
-from routes.auth import auth_bp
+from routes.auth_api import auth_bp
 from routes.home import home_bp
 from routes.test import test_bp
-from routes.google_streetview import streetview_bp
+from routes.google_streetview_api import streetview_bp
 
 # Load environment variables
 load_dotenv()

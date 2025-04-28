@@ -20,6 +20,8 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     right: [],
   });
 
+  const [imgDims, setImgDims] = useState({ width: 1, height: 1 });
+
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -138,55 +140,105 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   const directions = ["front", "back", "left", "right"];
 
+  const renderBoundingBoxes = (boxes) => {
+    const scaleX = imgDims.width / 640;
+    const scaleY = imgDims.height / 640;
+  
+    return boxes.map(([x1, y1, x2, y2], idx) => {
+      const left = x1 * scaleX;
+      const top = y1 * scaleY;
+      const width = (x2 - x1) * scaleX;
+      const height = (y2 - y1) * scaleY;
+  
+      return (
+        <div
+          key={idx}
+          style={{
+            position: "absolute",
+            left,
+            top,
+            width,
+            height,
+            border: "2px solid red",
+            backgroundColor: "rgba(255, 0, 0, 0.2)",
+            zIndex: 5,
+          }}
+        />
+      );
+    });
+  };
+  
+
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
-    render: () => (
-      <Tab.Pane
-        attached={false}
-        style={{ height: "100%", position: "relative" }}
-      >
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "relative",
-          }}
-        >
-          {loading ? (
-            <Loader active inline="centered" size="huge" />
-          ) : (
-            <Image
-              src={
-                imageList?.[direction]?.[currentIndex]?.url ||
-                "/static/images/placeholder.jpg"
-              }
-              style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                objectFit: "contain",
-              }}
-              bordered
-            />
-          )}
+    render: () => {
+      const imageData = imageList?.[direction]?.[currentIndex];
+      const imageUrl = imageData?.url || "/static/images/placeholder.jpg";
+      const boxes = imageData?.boxes || [];
 
-          <Button
-            icon
-            onClick={() => setFullscreenOpen(true)}
+      return (
+        <Tab.Pane
+          attached={false}
+          style={{ height: "100%", position: "relative" }}
+        >
+          <div
             style={{
-              position: "absolute",
-              bottom: "1rem",
-              right: "1rem",
-              zIndex: 10,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              position: "relative",
             }}
           >
-            <Icon name="expand" />
-          </Button>
-        </div>
-      </Tab.Pane>
-    ),
+            {loading ? (
+              <Loader active inline="centered" size="huge" />
+            ) : (
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <img
+                  src={imageUrl}
+                  alt="Stream"
+                  onLoad={(e) => {
+                    setImgDims({
+                      width: e.target.offsetWidth,
+                      height: e.target.offsetHeight,
+                    });
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    objectFit: "contain",
+                    // position: "absolute",
+                    top: 0,
+                    left: 0,
+                  }}
+                />
+                {renderBoundingBoxes(boxes)}
+              </div>
+            )}
+
+            <Button
+              icon
+              onClick={() => setFullscreenOpen(true)}
+              style={{
+                position: "absolute",
+                bottom: "1rem",
+                right: "1rem",
+                zIndex: 10,
+              }}
+            >
+              <Icon name="expand" />
+            </Button>
+          </div>
+        </Tab.Pane>
+      );
+    },
   }));
 
   return (
