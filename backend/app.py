@@ -16,6 +16,8 @@ from routes.home import home_bp
 from routes.test import test_bp
 from routes.google_streetview_api import streetview_bp
 
+from routes.heatmap_api import heatmap_bp
+
 # Load environment variables
 load_dotenv()
 
@@ -38,6 +40,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(home_bp)
 app.register_blueprint(test_bp)
 app.register_blueprint(streetview_bp)
+app.register_blueprint(heatmap_bp)
 
 # Add detection endpoint
 @app.route('/detect', methods=['POST'])
