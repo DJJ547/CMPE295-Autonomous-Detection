@@ -108,6 +108,7 @@ def detect_s3():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+app.register_blueprint(graphs_bp)
 
 # Run the app
 if __name__ == '__main__':
