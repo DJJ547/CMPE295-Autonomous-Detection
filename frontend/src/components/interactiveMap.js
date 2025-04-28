@@ -16,8 +16,8 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
   const getMarkerColor = (label) => {
     const colorMap = {
       "road-damage": "red",
-      graffiti: "orange",
-      encampment: "yellow",
+      "tent": "orange",
+      "graffiti": "yellow",
     };
 
     return colorMap[label] || "white";
@@ -31,9 +31,9 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
         gestureHandling={"greedy"}
         disableDefaultUI={true}
       >
-        {carLat !== null && carLng !== null && (
+        {/* {carLat !== null && carLng !== null && (
           <CarMarker position={{ lat: carLat, lng: carLng }} />
-        )}
+        )} */}
 
         {Array.isArray(markers) &&
           markers.map((marker, index) => (

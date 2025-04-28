@@ -8,7 +8,7 @@ export default function GoogleMap() {
 
    // Function to fetch markers from the backend
   const fetchMarkers = () => {
-    fetch("http://localhost:8000/api/markers")  // Replace with your backend URL
+    fetch("http://localhost:8000/api/anomalies")  // Replace with your backend URL
       .then((response) => response.json())
       .then((data) => {
         setMarkers(data);

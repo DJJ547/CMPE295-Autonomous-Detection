@@ -10,7 +10,7 @@ const Dashboard = () => {
 
   // Function to fetch markers from the backend
   const fetchMarkers = () => {
-    fetch("http://localhost:8000/api/markers")
+    fetch("http://localhost:8000/api/anomalies")
       .then((response) => response.json())
       .then((data) => {
         setMarkers(data);

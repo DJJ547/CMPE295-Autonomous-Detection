@@ -28,6 +28,7 @@ const CustomMarker = ({position, icon, info}) => {
         <InfoWindow anchor={marker} headerDisabled>
           <h2>{info.class}</h2>
           <p>lat:{info.lat}, lng:{info.lng}</p>
+          <img src={info.image_url}/>
         </InfoWindow>
       )}
     </>
