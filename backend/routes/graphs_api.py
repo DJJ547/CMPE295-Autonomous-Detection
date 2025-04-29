@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from sqlalchemy import text
 from mysql_db import db
 from mysql_models import Anomaly
 
@@ -31,14 +32,14 @@ def get_anomaly_trends():
     Get monthly issue counts for bar/line charts.
     """
     try:
-        results = db.session.execute("""
+        results = db.session.execute(text("""
             SELECT DATE_FORMAT(timestamp, '%M') AS month, COUNT(*) AS issues_detected
             FROM anomalies
             GROUP BY month
             ORDER BY MIN(timestamp)
-        """)
+        """))
 
-        data = [{'month': row['month'], 'issues_detected': row['issues_detected']} for row in results]
+        data = [{'month': row[0], 'issues_detected': row[1]} for row in results]
 
         return jsonify(data), 200
     except Exception as e:

@@ -17,7 +17,7 @@ const LineChartComponent = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('/api/graphs/trends')
+    fetch('http://localhost:8000/api/graphs/trends')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch line chart data');

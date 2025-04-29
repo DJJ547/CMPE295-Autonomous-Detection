@@ -16,7 +16,8 @@ load_dotenv()
 
 # Initialize Flask & extensions
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Config
 app.config['CORS_HEADERS'] = 'Content-Type'
