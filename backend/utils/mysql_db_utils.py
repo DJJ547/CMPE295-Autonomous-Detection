@@ -18,19 +18,30 @@ def get_detected_type(label: str) -> DetectionType:
 
 def register_anomaly_to_db(latitude, longitude, image_url, output):
     try:
-        new_event_entry = DetectionEvent(
+        # Step 1: Check if an event with the same (lat, lon) exists
+        existing_event = DetectionEvent.query.filter_by(
             latitude=latitude,
-            longitude=longitude,
-            timestamp=datetime.now(timezone.utc)
-        )
-        db.session.add(new_event_entry)
-        db.session.commit()
-        print("Anomaly successfully registered.")
+            longitude=longitude
+        ).first()
 
-        new_event_id = new_event_entry.id
+        if existing_event:
+            new_event_id = existing_event.id
+        else:
+            # Step 2: Create a new DetectionEvent
+            new_event_entry = DetectionEvent(
+                latitude=latitude,
+                longitude=longitude,
+                timestamp=datetime.now(timezone.utc)
+            )
+            db.session.add(new_event_entry)
+            db.session.commit()
+            new_event_id = new_event_entry.id
+            print("Anomaly successfully registered.")
+
+        # Step 3: Add associated image
         new_image_entry = DetectionImage(
-            event_id = new_event_id,
-            image_url = image_url
+            event_id=new_event_id,
+            image_url=image_url
         )
         db.session.add(new_image_entry)
         db.session.commit()

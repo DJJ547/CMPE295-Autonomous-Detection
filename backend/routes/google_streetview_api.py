@@ -15,10 +15,10 @@ text_labels = [["a graffiti", "a pothole", "a tent"]]
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
-    """Generate evenly spaced coordinates between start and end points."""
+    """Generate evenly spaced coordinates between start and end points, rounded to 6 decimal places."""
     latitudes = np.linspace(startLat, endLat, num_points)
     longitudes = np.linspace(startLng, endLng, num_points)
-    return list(zip(latitudes, longitudes))
+    return [(round(lat, 6), round(lng, 6)) for lat, lng in zip(latitudes, longitudes)]
 
 
 def upload_file_to_s3(local_path, bucket_name, s3_key):

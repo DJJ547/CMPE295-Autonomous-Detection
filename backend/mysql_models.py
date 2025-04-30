@@ -1,6 +1,7 @@
 from mysql_db import db
 import enum
 from datetime import datetime, timezone
+from sqlalchemy import Numeric, UniqueConstraint
 
 class User(db.Model):
     __tablename__ = 'users'  # must match actual table name in MySQL
@@ -13,13 +14,18 @@ class User(db.Model):
 class DetectionEvent(db.Model):
     __tablename__ = 'detection_events'  # must match actual table name in MySQL
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
+    latitude = db.Column(Numeric(9, 6), nullable=False)
+    longitude = db.Column(Numeric(9, 6), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
     street = db.Column(db.String(100), nullable=True)
     city = db.Column(db.String(100), nullable=True)
     state = db.Column(db.String(100), nullable=True)
     zipcode = db.Column(db.String(100), nullable=True)
+    
+    # The detection_events table allows only one event per unique (latitude, longitude)
+    __table_args__ = (
+        UniqueConstraint('latitude', 'longitude', name='uq_lat_lon'),
+    )
     
     # Optional reverse relation
     images = db.relationship("DetectionImage", backref="event", cascade="all, delete-orphan")
