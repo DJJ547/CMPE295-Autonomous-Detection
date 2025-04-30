@@ -143,7 +143,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const renderBoundingBoxes = (boxes, labels = [], scores = []) => {
     const scaleX = imgDims.width / 640;
     const scaleY = imgDims.height / 640;
-  
+
     return boxes.map(([x1, y1, x2, y2], idx) => {
       const left = x1 * scaleX;
       const top = y1 * scaleY;
@@ -151,9 +151,27 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       const height = (y2 - y1) * scaleY;
       const label = labels[idx] || "";
       const score = scores[idx] !== undefined ? scores[idx].toFixed(2) : "";
-  
+
       return (
-        <div key={idx} style={{ position: "absolute", left, top, width, height, zIndex: 5 }}>
+        <div
+          key={idx}
+          style={{ position: "absolute", left, top, width, height, zIndex: 5 }}
+        >
+          {/* Label positioned above the bounding box */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-14px", // move above the box
+              left: "0px",
+              color: "red",
+              fontSize: "10px",
+              fontWeight: 500,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label} ({score})
+          </div>
+
           {/* Bounding box */}
           <div
             style={{
@@ -163,31 +181,11 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
               backgroundColor: "rgba(255, 0, 0, 0.2)",
               position: "relative",
             }}
-          >
-            {/* Label and Score */}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                backgroundColor: "rgba(255, 0, 0, 0.8)",
-                color: "white",
-                padding: "1px 4px",
-                fontSize: "12px",
-                fontWeight: "bold",
-                borderBottomRightRadius: "4px",
-              }}
-            >
-              {label} ({score})
-            </div>
-          </div>
+          />
         </div>
       );
     });
   };
-  
-  
-  
 
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
@@ -239,7 +237,11 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
                     left: 0,
                   }}
                 />
-                {renderBoundingBoxes(boxes, imageData?.labels, imageData?.scores)}
+                {renderBoundingBoxes(
+                  boxes,
+                  imageData?.labels,
+                  imageData?.scores
+                )}
               </div>
             )}
 

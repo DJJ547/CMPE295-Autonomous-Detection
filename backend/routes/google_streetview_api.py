@@ -154,6 +154,8 @@ def stream_all_images():
                     # If anomalies detected, store the current image into S3 folder named "detected_image"
                     if detected:
                         detected_temp_dir = "detected_temp"
+                        if not os.path.exists(detected_temp_dir):
+                            os.makedirs(detected_temp_dir)
                         detected_temp_local_path = os.path.join(
                             detected_temp_dir, image_name)
                         with open(detected_temp_local_path, "wb") as f:
@@ -163,7 +165,7 @@ def stream_all_images():
                             detected_temp_local_path, bucket_name, s3_detected_image_path)
                         if s3_detected_image_url:
                             mysql_db_utils.register_anomaly_to_db(
-                                lat, lon, s3_detected_image_url, output['boxes'], output['labels'], output['scores'])
+                                lat, lon, s3_detected_image_url, output)
 
                 except Exception as e:
                     print(

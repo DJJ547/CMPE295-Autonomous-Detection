@@ -16,7 +16,7 @@ def get_detected_type(label: str) -> DetectionType:
         raise ValueError(f"Unknown label: {label}")
 
 
-def register_anomaly_to_db(latitude, longitude, image_url, boxes, labels, scores):
+def register_anomaly_to_db(latitude, longitude, image_url, output):
     try:
         new_event_entry = DetectionEvent(
             latitude=latitude,
@@ -36,16 +36,16 @@ def register_anomaly_to_db(latitude, longitude, image_url, boxes, labels, scores
         db.session.commit()
         
         new_image_id = new_image_entry.id
-        for box, label, score in zip(boxes, labels, scores):
+        for res in output:
             new_metadata_entry = DetectionMetadata(
                 image_id=new_image_id,
-                X1_loc=box[0],
-                Y1_loc=box[1],
-                X2_loc=box[2],
-                Y2_loc=box[3],
-                label=label,
-                score=score,
-                type=get_detected_type(label)
+                X1_loc=res['box'][0],
+                Y1_loc=res['box'][1],
+                X2_loc=res['box'][2],
+                Y2_loc=res['box'][3],
+                label=res['label'],
+                score=res['score'],
+                type=get_detected_type(res['label'])
             )
             db.session.add(new_metadata_entry)
             db.session.commit()
