@@ -83,7 +83,7 @@ def stream_all_images():
     api_key = os.getenv("GOOGLE_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
     s3_stream_root_folder_name = f'user{user_id}-livestream'
-    s3_detected_root_folder_name = 'detected-image'
+    s3_detected_root_folder_name = 'detected-images'
     delete_s3_folder(bucket_name, s3_stream_root_folder_name)
 
     # stream_temp_dir : Name of the output folder where stream images will be saved
