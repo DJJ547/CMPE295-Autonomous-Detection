@@ -140,7 +140,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   const directions = ["front", "back", "left", "right"];
 
-  const renderBoundingBoxes = (boxes) => {
+  const renderBoundingBoxes = (boxes, labels = [], scores = []) => {
     const scaleX = imgDims.width / 640;
     const scaleY = imgDims.height / 640;
   
@@ -149,24 +149,44 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       const top = y1 * scaleY;
       const width = (x2 - x1) * scaleX;
       const height = (y2 - y1) * scaleY;
+      const label = labels[idx] || "";
+      const score = scores[idx] !== undefined ? scores[idx].toFixed(2) : "";
   
       return (
-        <div
-          key={idx}
-          style={{
-            position: "absolute",
-            left,
-            top,
-            width,
-            height,
-            border: "2px solid red",
-            backgroundColor: "rgba(255, 0, 0, 0.2)",
-            zIndex: 5,
-          }}
-        />
+        <div key={idx} style={{ position: "absolute", left, top, width, height, zIndex: 5 }}>
+          {/* Bounding box */}
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "2px solid red",
+              backgroundColor: "rgba(255, 0, 0, 0.2)",
+              position: "relative",
+            }}
+          >
+            {/* Label and Score */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                backgroundColor: "rgba(255, 0, 0, 0.8)",
+                color: "white",
+                padding: "1px 4px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                borderBottomRightRadius: "4px",
+              }}
+            >
+              {label} ({score})
+            </div>
+          </div>
+        </div>
       );
     });
   };
+  
+  
   
 
   const panes = directions.map((direction) => ({
@@ -219,7 +239,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
                     left: 0,
                   }}
                 />
-                {renderBoundingBoxes(boxes)}
+                {renderBoundingBoxes(boxes, imageData?.labels, imageData?.scores)}
               </div>
             )}
 

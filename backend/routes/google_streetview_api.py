@@ -8,9 +8,11 @@ from flask import Blueprint, jsonify, request
 import boto3
 
 from detection_models import grounding_dino
-from utils  import mysql_db_utils
+from utils import mysql_db_utils
 
 streetview_bp = Blueprint('streetview', __name__)
+text_labels = [["a graffiti", "a pothole", "a tent"]]
+
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
     """Generate evenly spaced coordinates between start and end points."""
@@ -45,7 +47,7 @@ def upload_file_to_s3(local_path, bucket_name, s3_key):
 
 def delete_s3_folder(bucket_name, folder_prefix):
     """
-    Deletes all objects under a folder prefix in the given S3 bucket.
+    Deletes all objects under a folder prefix in the given S3 bucket to avoid overhead.
     """
     s3 = boto3.client("s3")
     try:
@@ -81,20 +83,35 @@ def stream_all_images():
     api_key = os.getenv("GOOGLE_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
     s3_stream_root_folder_name = f'user{user_id}-livestream'
-    s3_detected_root_folder_name = 'detected'
-    # Clear old images to avoid overhead
+    s3_detected_root_folder_name = 'detected-image'
     delete_s3_folder(bucket_name, s3_stream_root_folder_name)
 
-    # Customize these parameters
-    # output_dir = Change output folder name
-    # size = Image resolution (max: 640x640)
-    # fov = Zoom level (10~120), 120 = capture more of surrounding, 90 = moderate field of view, 30 = zoom in on a smaller area
-    # heading = Camera facing direction (0~360), 0 = North, 90 = East, 180 = South, 270 = West
-    # pitch = Vertical tilt (-90~90), 0 = looks straight ahead, 90 = straight up, -90 = straight down
+    # stream_temp_dir : Name of the output folder where stream images will be saved
+
+    # size       : Image resolution (max: 640x640)
+
+    # fov        : Field of view (zoom level)
+    #              - Range: 10 to 120
+    #              - 120 = wide view (more surroundings)
+    #              - 90  = standard view
+    #              - 30  = zoomed-in view
+
+    # heading    : Camera direction (in degrees)
+    #              - 0   = North
+    #              - 90  = East
+    #              - 180 = South
+    #              - 270 = West
+
+    # pitch      : Camera vertical tilt
+    #              - Range: -90 to 90
+    #              -  0   = level (straight ahead)
+    #              - 90  = pointing straight up
+    #              - -90 = pointing straight down
+
     size = "640x640"
     fov = 90
     pitch = 0
-    output_dir = "stream_temp"
+    stream_temp_dir = "stream_temp"
 
     headings = {
         "front": 90,
@@ -103,10 +120,10 @@ def stream_all_images():
         "left": 360
     }
 
-    image_urls = {dir: [] for dir in headings}
+    image_data = {dir: [] for dir in headings}
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not os.path.exists(stream_temp_dir):
+        os.makedirs(stream_temp_dir)
 
     for idx, (lat, lon) in enumerate(coords):
         for direction, heading in headings.items():
@@ -124,41 +141,54 @@ def stream_all_images():
 
             if response.status_code == 200:
                 image_name = f"{idx + 1}.jpg"
-                local_image_path = os.path.join(output_dir, image_name)
+                stream_temp_local_path = os.path.join(
+                    stream_temp_dir, image_name)
 
-                with open(local_image_path, "wb") as f:
+                with open(stream_temp_local_path, "wb") as f:
                     f.write(response.content)
 
                 # Run Grounding DINO detection
                 try:
-                    detected, bounding_boxes = grounding_dino.detect_objects(
-                        local_image_path, "graffiti on wall, pothole on road, tent on the side of street")
-                    
+                    detected, output = grounding_dino.detect_objects(
+                        stream_temp_local_path, text_labels)
+                    # If anomalies detected, store the current image into S3 folder named "detected_image"
                     if detected:
-                        s3_detected_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
-                        s3_detected_image_url = upload_file_to_s3(local_image_path, bucket_name, s3_detected_image_path)
+                        detected_temp_dir = "detected_temp"
+                        detected_temp_local_path = os.path.join(
+                            detected_temp_dir, image_name)
+                        with open(detected_temp_local_path, "wb") as f:
+                            f.write(response.content)
+                        s3_detected_image_path = f"{s3_detected_root_folder_name}"
+                        s3_detected_image_url = upload_file_to_s3(
+                            detected_temp_local_path, bucket_name, s3_detected_image_path)
                         if s3_detected_image_url:
-                            mysql_db_utils.register_anomaly_to_db(lat, lon, s3_detected_image_url)
-                        
-                except Exception as e:
-                    print(f"Detection failed on {local_image_path}: {e}")
-                    detected, bounding_boxes = False, []
+                            mysql_db_utils.register_anomaly_to_db(
+                                lat, lon, s3_detected_image_url, output['boxes'], output['labels'], output['scores'])
 
+                except Exception as e:
+                    print(
+                        f"Detection failed on {detected_temp_local_path}: {e}")
+                    detected, output = False, []
+
+                # Store images returned by Google Street View API into S3 folder named "user{user_id}-livestream"
                 s3_stream_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
-                s3_stream_image_url = upload_file_to_s3(local_image_path, bucket_name, s3_stream_image_path)
+                s3_stream_image_url = upload_file_to_s3(
+                    stream_temp_local_path, bucket_name, s3_stream_image_path)
 
                 if s3_stream_image_url:
-                    image_urls[direction].append({
-                    "url": s3_stream_image_url,
-                    "lat": lat,
-                    "lon": lon,
-                    "detected": detected,
-                    "boxes": bounding_boxes if detected else []
-                })
+                    image_data[direction].append({
+                        "url": s3_stream_image_url,
+                        "lat": lat,
+                        "lon": lon,
+                        "detected": detected,
+                        "boxes": [detection["box"] for detection in output] if detected else [],
+                        "labels": [detection["label"] for detection in output] if detected else [],
+                        "scores": [detection["score"] for detection in output] if detected else []
+                    })
             else:
                 print(
                     f"Failed to fetch {direction} image at coordinate {idx + 1}")
 
             time.sleep(0.25)
 
-    return jsonify(image_urls)
+    return jsonify(image_data)
