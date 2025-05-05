@@ -165,7 +165,7 @@ def stream_all_images():
                             detected_temp_local_path, bucket_name, s3_detected_image_path)
                         if s3_detected_image_url:
                             mysql_db_utils.register_anomaly_to_db(
-                                lat, lon, s3_detected_image_url, output)
+                                lat, lon, direction, s3_detected_image_url, output)
 
                 except Exception as e:
                     print(

@@ -16,7 +16,7 @@ def get_detected_type(label: str) -> DetectionType:
         raise ValueError(f"Unknown label: {label}")
 
 
-def register_anomaly_to_db(latitude, longitude, image_url, output):
+def register_anomaly_to_db(latitude, longitude, direction, image_url, output):
     try:
         # Step 1: Check if an event with the same (lat, lon) exists
         existing_event = DetectionEvent.query.filter_by(
@@ -41,6 +41,7 @@ def register_anomaly_to_db(latitude, longitude, image_url, output):
         # Step 3: Add associated image
         new_image_entry = DetectionImage(
             event_id=new_event_id,
+            direction=direction,
             image_url=image_url
         )
         db.session.add(new_image_entry)

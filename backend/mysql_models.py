@@ -30,10 +30,18 @@ class DetectionEvent(db.Model):
     # Optional reverse relation
     images = db.relationship("DetectionImage", backref="event", cascade="all, delete-orphan")
 
+# Define the ENUM type as a Python Enum
+class Directions(enum.Enum):
+    front = "front"
+    back = "back"
+    left = "left"
+    right = "right"
+
 class DetectionImage(db.Model):
     __tablename__ = 'detection_images'  # must match actual table name in MySQL
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     event_id = db.Column(db.Integer, db.ForeignKey('detection_events.id'), nullable=False)
+    direction = db.Column(db.Enum(Directions), nullable=False)
     image_url = db.Column(db.String(500), nullable=False)
     
     # Optional reverse relation
