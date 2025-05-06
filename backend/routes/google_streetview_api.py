@@ -11,7 +11,7 @@ from detection_models import grounding_dino
 from utils import mysql_db_utils
 
 streetview_bp = Blueprint('streetview', __name__)
-text_labels = [["a graffiti", "a pothole", "a tent"]]
+text_labels = [["a graffiti", "a crack", "a tent"]]
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):

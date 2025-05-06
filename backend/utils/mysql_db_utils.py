@@ -3,6 +3,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata, DetectionType
 from datetime import datetime, timezone
 
+customized_road_damage_type = ['crack', 'pothole', 'damage']
+
 def get_detected_type(label: str) -> DetectionType:
     label = label.lower()
 
@@ -10,8 +12,8 @@ def get_detected_type(label: str) -> DetectionType:
         return DetectionType.graffiti
     elif "tent" in label:
         return DetectionType.tent
-    elif "pothole" in label:
-        return DetectionType.pothole
+    elif "crack" in customized_road_damage_type:
+        return DetectionType.road_damage
     else:
         raise ValueError(f"Unknown label: {label}")
 
