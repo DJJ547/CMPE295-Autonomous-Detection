@@ -12,6 +12,7 @@ export default function GoogleMap() {
       .then((response) => response.json())
       .then((data) => {
         setMarkers(data);
+        console.log(markers)
       })
       .catch((error) => {
         console.error("Error fetching markers:", error);
@@ -22,12 +23,17 @@ export default function GoogleMap() {
     // Fetch markers immediately on mount
     fetchMarkers();
 
-    // Set up polling: Fetch markers every 5 seconds (5000 ms)
-    const intervalId = setInterval(fetchMarkers, 5000);
-
-    // Cleanup: Clear the interval when the component unmounts
-    return () => clearInterval(intervalId);
   }, [])
+
+  useEffect(() => {
+    // Fetch markers immediately on mount
+
+    // Set up polling: Fetch markers every 5 seconds (5000 ms)
+    // const intervalId = setInterval(fetchMarkers, 5000);
+    console.log(markers)
+    // Cleanup: Clear the interval when the component unmounts
+    // return () => clearInterval(intervalId);
+  }, [markers])
 
 
   return (

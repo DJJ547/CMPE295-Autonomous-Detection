@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
+
 import CustomMarker from "./customMarker";
 import CarMarker from "./carMarker";
-
+import PopupWindow from "./PopupWindow";
 const center = {
   lat: 37.7749, // Default to San Francisco
   lng: -122.4194,
@@ -10,18 +11,21 @@ const center = {
 
 const InteractiveMap = ({ carLat, carLng, markers }) => {
   const [position, setPosition] = useState(center);
+  const [selectedMarker, setSelectedMarker] = useState(null);
   const speed = 1;
 
-  // Function to determine marker color based on label
-  const getMarkerColor = (label) => {
-    const colorMap = {
-      "road-damage": "red",
-      "tent": "orange",
-      "graffiti": "yellow",
-    };
 
-    return colorMap[label] || "white";
+    // Handle marker click
+  const handleMarkerClick = (marker) => {
+    console.log(marker);
+    setSelectedMarker(marker);
   };
+
+  // Close the popup window
+  const closePopup = () => {
+    setSelectedMarker(null);
+  };
+
 
   return (
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
@@ -40,17 +44,29 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
             <CustomMarker
               key={index}
               position={{
-                lat: parseFloat(marker.lat),
-                lng: parseFloat(marker.lng),
-              }} // Convert to float
-              icon={{
-                url: `http://maps.google.com/mapfiles/ms/icons/${getMarkerColor(
-                  marker.class
-                )}-dot.png`,
+                lat: parseFloat(marker.latitude), // Updated to "latitude"
+                lng: parseFloat(marker.longitude), // Updated to "longitude"
               }}
-              info={marker}
+              icon={{
+                url: `http://maps.google.com/mapfiles/ms/icons/red-dot.png`,// Default to "red"
+              }}
+              info={{
+                id: marker.id,
+                timestamp: marker.timestamp,
+                street: marker.street || "Unknown",
+                city: marker.city || "Unknown",
+                state: marker.state || "Unknown",
+                zipcode: marker.zipcode || "Unknown",
+              }}
+
+              onClick={() => handleMarkerClick(marker)}
+
             />
           ))}
+
+        {selectedMarker && (
+          <PopupWindow marker={selectedMarker} onClose={closePopup} />
+        )}
       </Map>
     </APIProvider>
   );
