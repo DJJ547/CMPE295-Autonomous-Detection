@@ -1,7 +1,6 @@
 import random
 from flask import Blueprint, jsonify
-from models.anomaly import Anomaly
-
+from mysql_models import Detection_metadata
 
 # Create a Blueprint for home routes
 googleMap_bp = Blueprint('googleMap', __name__)
@@ -10,7 +9,7 @@ googleMap_bp = Blueprint('googleMap', __name__)
 @googleMap_bp.route('/api/anomalies', methods=['GET'])
 def get_anomalies():
     
-    anomalies = Anomaly.query.all()
+    anomalies = Detection_metadata.query.all()
     markers = []
     for anomaly in anomalies:
         markers.append({

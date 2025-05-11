@@ -1,6 +1,5 @@
 import random
 from flask import Blueprint, jsonify
-from models.anomaly import Anomaly
 
 # Create a Blueprint for home routes
 test_bp = Blueprint('test', __name__)
