@@ -9,6 +9,7 @@ import boto3
 
 from detection_models import grounding_dino
 from utils import mysql_db_utils
+from datetime import datetime
 
 streetview_bp = Blueprint('streetview', __name__)
 text_labels = [["a graffiti", "a crack", "a tent"]]
@@ -21,23 +22,30 @@ def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
     return [(round(lat, 6), round(lng, 6)) for lat, lng in zip(latitudes, longitudes)]
 
 
-def upload_file_to_s3(local_path, bucket_name, s3_key):
+def upload_file_to_s3(local_path, bucket_name, s3_root_folder_name):
     """
     Upload a single file to AWS S3 and return the URL of the uploaded file.
 
     Parameters:
         local_path (str): Path to the local file.
         bucket_name (str): S3 bucket name.
-        s3_key (str): Destination key (path) in the S3 bucket.
+        s3_key_prefix (str): Destination folder/key prefix in the S3 bucket.
 
     Returns:
         str: URL of the uploaded file.
     """
     s3 = boto3.client("s3")
+    filename = os.path.basename(local_path)
+
+    # Ensure the prefix ends with '/' and append the filename
+    if s3_root_folder_name and not s3_root_folder_name.endswith("/"):
+        s3_root_folder_name += "/"
+
+    s3_path = f"{s3_root_folder_name}{filename}"
+
     try:
-        s3.upload_file(local_path, bucket_name, s3_key)
-        # Return the URL (assuming the bucket is public or you use pre-signed URLs)
-        url = f"https://{bucket_name}.s3.amazonaws.com/{s3_key}"
+        s3.upload_file(local_path, bucket_name, s3_path)
+        url = f"https://{bucket_name}.s3.amazonaws.com/{s3_path}"
         print(f"Uploaded to S3: {url}")
         return url
     except Exception as e:
@@ -140,7 +148,8 @@ def stream_all_images():
                 "https://maps.googleapis.com/maps/api/streetview", params=params)
 
             if response.status_code == 200:
-                image_name = f"{idx + 1}.jpg"
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                image_name = f"{timestamp}_{idx + 1}.jpg"
                 stream_temp_local_path = os.path.join(
                     stream_temp_dir, image_name)
 
@@ -160,9 +169,8 @@ def stream_all_images():
                             detected_temp_dir, image_name)
                         with open(detected_temp_local_path, "wb") as f:
                             f.write(response.content)
-                        s3_detected_image_path = f"{s3_detected_root_folder_name}"
                         s3_detected_image_url = upload_file_to_s3(
-                            detected_temp_local_path, bucket_name, s3_detected_image_path)
+                            detected_temp_local_path, bucket_name, s3_detected_root_folder_name)
                         if s3_detected_image_url:
                             mysql_db_utils.register_anomaly_to_db(
                                 lat, lon, direction, s3_detected_image_url, output)
