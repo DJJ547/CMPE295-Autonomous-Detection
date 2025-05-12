@@ -11,7 +11,7 @@ const PopupWindow = ({ marker, onClose }) => {
         <h3>Event ID: {marker.id}</h3>
         <p>Timestamp: {new Date(marker.timestamp).toLocaleString()}</p>
         <p>
-          Location: {marker.street || "Unknown"}, {marker.city || "Unknown"}, 
+          Location: {marker.street || "Unknown"}, {marker.city || "Unknown"},
           {marker.state || "Unknown"}, {marker.zipcode || "Unknown"}
         </p>
         {marker.images?.map((image, imgIndex) => (

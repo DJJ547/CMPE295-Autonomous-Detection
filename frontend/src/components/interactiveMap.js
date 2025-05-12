@@ -65,7 +65,9 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
           ))}
 
         {selectedMarker && (
+          <div style={{ position: "absolute", top: 0, left: 0 }}>
           <PopupWindow marker={selectedMarker} onClose={closePopup} />
+          </div>
         )}
       </Map>
     </APIProvider>

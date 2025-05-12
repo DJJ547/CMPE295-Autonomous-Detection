@@ -1,15 +1,14 @@
 .popup-window {
-  position: fixed;
-  top: 10%; /* Position from the top of the viewport */
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to ensure it's exactly centered */
-  width: 500px; /* Fixed width */
-  max-height: 80vh; /* Maximum height */
-  overflow-y: auto; /* Allow vertical scrolling if content overflows */
+position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 500px;
+  min-height: 500px;
   background-color: white;
+  padding: 10px;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow for better visibility */
-  z-index: 1000; /* Place overlay below the popup but above the map */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* Ensure it stays on top */
 }
 
 .popup-content {

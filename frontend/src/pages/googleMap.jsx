@@ -39,7 +39,7 @@ export default function GoogleMap() {
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>Google Map</h1>
-      <div style={{ width: "80%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+      <div style={{ position:'relative', width: "80%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
         <InteractiveMap markers = {markers}/>
       </div>
     </div>
