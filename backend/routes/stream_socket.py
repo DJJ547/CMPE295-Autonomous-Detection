@@ -13,7 +13,7 @@ from detection_models import grounding_dino
 from utils import mysql_db_utils
 from datetime import datetime
 
-text_labels = [["a graffiti", "a crack", "a tent"]]
+text_labels = [["illegal graffiti on the wall", "a crack on the road surface", "a tent on the ground"]]
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
@@ -136,6 +136,55 @@ def stream_all_images(data):
     for idx, (lat, lon) in enumerate(coords):
         for direction, heading in headings.items():
             params = {
+                    "latlng": f"{lat},{lon}", 
+                    "key": api_key
+                }
+            response = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params=params) #retrieve address based on coordinate
+            address = {
+                'formatted_address': "",
+                'street': "",
+                'city': "",
+                'state': "",
+                'zipcode': "",
+            }
+            if response.status_code == 200:
+                data = response.json()
+                if data['status'] == "OK" and len(data.get('results', [])) > 0:
+                    try:
+                        # Extract the first result
+                        result = data['results'][0]
+
+                        # Get the formatted address
+                        address["formatted_address"] = result.get('formatted_address', 'Unknown')
+
+                        # Initialize variables for components
+                        street_number = street_name = ""
+
+                        # Iterate over address components to find desired fields
+                        for component in result.get('address_components', []):
+                            types = component.get('types', [])
+                            if "street_number" in types:
+                                street_number = component.get('long_name', '')
+                            if "route" in types:
+                                street_name = component.get('long_name', '')
+                                address["street"] = f"{street_number} {street_name}".strip()
+                            if "locality" in types:
+                                address["city"] = component.get('long_name', 'Unknown')
+                            if "administrative_area_level_1" in types:
+                                address["state"] = component.get('short_name', 'Unknown')
+                            if "postal_code" in types:
+                                address["zipcode"] = component.get('long_name', 'Unknown')
+
+                        #print("Extracted Address Information:", address)
+
+                    except (IndexError, KeyError) as e:
+                        print("Error parsing response:", str(e))
+                else:
+                    print("Failed to retrieve address for coordinate: ", lat, lon)
+            else:
+                print("Failed to retrieve address for coordinate: ", lat, lon)
+            
+            params = {
                 "size": size,
                 "fov": fov,
                 "heading": heading,
@@ -148,6 +197,7 @@ def stream_all_images(data):
                 "https://maps.googleapis.com/maps/api/streetview", params=params)
 
             if response.status_code == 200:
+                    
                 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
                 image_name = f"{timestamp}_{idx + 1}.jpg"
                 stream_temp_local_path = os.path.join(
@@ -170,7 +220,7 @@ def stream_all_images(data):
                             detected_temp_local_path, bucket_name, s3_detected_root_folder_name)
                         if s3_detected_image_url:
                             mysql_db_utils.register_anomaly_to_db(
-                                lat, lon, direction, s3_detected_image_url, output)
+                                lat, lon, address, direction, s3_detected_image_url, output)
 
                 except Exception as e:
                     print(
@@ -195,5 +245,3 @@ def stream_all_images(data):
                 })
             else:
                 print(f"Failed to fetch {direction} image at coordinate ({lat}, {lon})")
-
-            time.sleep(0.25)

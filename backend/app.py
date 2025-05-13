@@ -11,6 +11,8 @@ from routes.home import home_bp
 from routes.test import test_bp
 
 from extensions import db, socketio, cors
+from routes.llm import llm_bp
+from routes.google_map_api import googlemap_bp
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -32,6 +34,8 @@ cors.init_app(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(home_bp)
 app.register_blueprint(test_bp)
+app.register_blueprint(googlemap_bp)
+app.register_blueprint(llm_bp)
 
 # Import and register your socket events
 import routes.stream_socket  # <-- important: this registers @socketio.on handlers
