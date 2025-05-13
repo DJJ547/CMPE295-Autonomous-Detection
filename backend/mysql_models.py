@@ -1,4 +1,4 @@
-from mysql_db import db
+from extensions import db
 import enum
 from datetime import datetime, timezone
 from sqlalchemy import Numeric, UniqueConstraint

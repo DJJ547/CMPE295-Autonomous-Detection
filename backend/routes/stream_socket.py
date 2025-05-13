@@ -4,14 +4,15 @@ import os
 import time
 import cv2
 import numpy as np
-from flask import Blueprint, jsonify, request
+from flask import request
 import boto3
 
+from extensions import socketio
+from flask_socketio import emit
 from detection_models import grounding_dino
 from utils import mysql_db_utils
 from datetime import datetime
 
-streetview_bp = Blueprint('streetview', __name__)
 text_labels = [["a graffiti", "a crack", "a tent"]]
 
 
@@ -76,14 +77,15 @@ def delete_s3_folder(bucket_name, folder_prefix):
 # num_points = 35
 
 
-@streetview_bp.route('/api/stream', methods=['GET'])
-def stream_all_images():
-    user_id = int(request.args.get('userId'))
-    startLat = float(request.args.get('startLatInput'))
-    startLng = float(request.args.get('startLngInput'))
-    endLat = float(request.args.get('endLatInput'))
-    endLng = float(request.args.get('endLngInput'))
-    num_points = int(request.args.get('num_points'))
+@socketio.on('start_stream')
+def stream_all_images(data):
+    print("✅ Socket successfully established with client")
+    user_id = int(data.get('userId'))
+    startLat = float(data.get('startLatInput'))
+    startLng = float(data.get('startLngInput'))
+    endLat = float(data.get('endLatInput'))
+    endLng = float(data.get('endLngInput'))
+    num_points = int(data.get('num_points'))
 
     coords = generate_coordinates(
         startLat, startLng, endLat, endLng, num_points)
@@ -91,10 +93,10 @@ def stream_all_images():
     api_key = os.getenv("GOOGLE_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
     s3_stream_root_folder_name = f'user{user_id}-livestream'
+    detected_temp_dir = "detected_temp"
+    stream_temp_dir = "stream_temp"
     s3_detected_root_folder_name = 'detected-images'
     delete_s3_folder(bucket_name, s3_stream_root_folder_name)
-
-    # stream_temp_dir : Name of the output folder where stream images will be saved
 
     # size       : Image resolution (max: 640x640)
 
@@ -115,11 +117,9 @@ def stream_all_images():
     #              -  0   = level (straight ahead)
     #              - 90  = pointing straight up
     #              - -90 = pointing straight down
-
     size = "640x640"
     fov = 90
     pitch = 0
-    stream_temp_dir = "stream_temp"
 
     headings = {
         "front": 90,
@@ -128,10 +128,10 @@ def stream_all_images():
         "left": 360
     }
 
-    image_data = {dir: [] for dir in headings}
-
     if not os.path.exists(stream_temp_dir):
         os.makedirs(stream_temp_dir)
+    if not os.path.exists(detected_temp_dir):
+        os.makedirs(detected_temp_dir)
 
     for idx, (lat, lon) in enumerate(coords):
         for direction, heading in headings.items():
@@ -162,9 +162,6 @@ def stream_all_images():
                         stream_temp_local_path, text_labels)
                     # If anomalies detected, store the current image into S3 folder named "detected_image"
                     if detected:
-                        detected_temp_dir = "detected_temp"
-                        if not os.path.exists(detected_temp_dir):
-                            os.makedirs(detected_temp_dir)
                         detected_temp_local_path = os.path.join(
                             detected_temp_dir, image_name)
                         with open(detected_temp_local_path, "wb") as f:
@@ -184,21 +181,19 @@ def stream_all_images():
                 s3_stream_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
                 s3_stream_image_url = upload_file_to_s3(
                     stream_temp_local_path, bucket_name, s3_stream_image_path)
-
-                if s3_stream_image_url:
-                    image_data[direction].append({
-                        "url": s3_stream_image_url,
-                        "lat": lat,
-                        "lon": lon,
-                        "detected": detected,
-                        "boxes": [detection["box"] for detection in output] if detected else [],
-                        "labels": [detection["label"] for detection in output] if detected else [],
-                        "scores": [detection["score"] for detection in output] if detected else []
-                    })
+                    
+                # Emit result immediately
+                emit("start_stream", {
+                    "direction": direction,
+                    "url": s3_stream_image_url,
+                    "lat": lat,
+                    "lon": lon,
+                    "detected": detected,
+                    "boxes": [detection["box"] for detection in output] if detected else [],
+                    "labels": [detection["label"] for detection in output] if detected else [],
+                    "scores": [detection["score"] for detection in output] if detected else []
+                })
             else:
-                print(
-                    f"Failed to fetch {direction} image at coordinate {idx + 1}")
+                print(f"Failed to fetch {direction} image at coordinate ({lat}, {lon})")
 
             time.sleep(0.25)
-
-    return jsonify(image_data)

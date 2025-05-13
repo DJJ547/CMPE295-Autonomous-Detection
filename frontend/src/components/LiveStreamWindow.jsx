@@ -11,6 +11,9 @@ import {
   Modal,
 } from "semantic-ui-react";
 import axios from "axios";
+import { io } from "socket.io-client";
+
+const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
 
 const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [imageList, setImageList] = useState({
@@ -44,36 +47,76 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     imageList.right.length
   );
 
+  // useEffect(() => {
+  //   if (!params) return;
+
+  //   const fetchImages = async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         `${process.env.REACT_APP_LOCALHOST}api/stream`,
+  //         {
+  //           params: {
+  //             userId: localStorage.getItem("user_id"),
+  //             startLatInput: params.startLatInput,
+  //             startLngInput: params.startLngInput,
+  //             endLatInput: params.endLatInput,
+  //             endLngInput: params.endLngInput,
+  //             num_points: params.points,
+  //           },
+  //         }
+  //       );
+  //       console.log("S3 image URLs and coordinates:", res.data);
+  //       setImageList(res.data);
+  //       setCurrentIndex(0);
+  //       setLoading(false);
+  //       setIsPlaying(true);
+  //     } catch (error) {
+  //       console.error("Failed to fetch images:", error);
+  //     }
+  //   };
+
+  //   fetchImages();
+  // }, [params]);
+
   useEffect(() => {
     if (!params) return;
-
-    const fetchImages = async () => {
-      try {
-        const res = await axios.get(
-          `${process.env.REACT_APP_LOCALHOST}api/stream`,
-          {
-            params: {
-              userId: localStorage.getItem("user_id"),
-              startLatInput: params.startLatInput,
-              startLngInput: params.startLngInput,
-              endLatInput: params.endLatInput,
-              endLngInput: params.endLngInput,
-              num_points: params.points,
-            },
-          }
-        );
-        console.log("S3 image URLs and coordinates:", res.data);
-        setImageList(res.data);
-        setCurrentIndex(0);
-        setLoading(false);
-        setIsPlaying(true);
-      } catch (error) {
-        console.error("Failed to fetch images:", error);
-      }
-    };
-
-    fetchImages();
+  
+    setLoading(true);
+    setImageList({
+      front: [],
+      back: [],
+      left: [],
+      right: [],
+    });
+    console.log(localStorage.getItem("user_id"))
+    socket.emit("start_stream", {
+      userId: localStorage.getItem("user_id"),
+      startLatInput: params.startLatInput,
+      startLngInput: params.startLngInput,
+      endLatInput: params.endLatInput,
+      endLngInput: params.endLngInput,
+      num_points: params.points,
+    });
   }, [params]);
+  
+  useEffect(() => {
+    socket.on("start_stream", (data) => {
+      const { direction, ...imageData } = data;
+  
+      setImageList((prev) => ({
+        ...prev,
+        [direction]: [...prev[direction], imageData],
+      }));
+  
+      setLoading(false); // loading ends as soon as first image is received
+      setIsPlaying(true);
+    });
+  
+    // cleanup on unmount
+    return () => {
+      socket.off("start_stream");
+    };
+  }, []);
 
   useEffect(() => {
     if (!isPlaying || maxLen === 0) return;

@@ -1,4 +1,4 @@
-from mysql_db import db
+from extensions import db
 from sqlalchemy.exc import SQLAlchemyError
 from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata, DetectionType
 from datetime import datetime, timezone

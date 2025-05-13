@@ -6,13 +6,13 @@ from typing import List
 # Load model and processor once globally to avoid reloading every time
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "IDEA-Research/grounding-dino-base"
-print("Loading Grounding DINO...")
 processor = AutoProcessor.from_pretrained(model_id)
 model = AutoModelForZeroShotObjectDetection.from_pretrained(
     model_id).to(device)
+print("Grounding DINO finished loading")
 
 
-def detect_objects(image_path: str, text_labels: List[List[str]], threshold: float = 0.3, text_threshold: float = 0.3):
+def detect_objects(image_path: str, text_labels: List[List[str]], threshold: float = 0.35, text_threshold: float = 0.35):
     # Load image
     image = Image.open(image_path).convert("RGB")
 
