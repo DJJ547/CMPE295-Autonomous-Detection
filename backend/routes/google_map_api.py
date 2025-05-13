@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from mysql_db import db
+from extensions import db
 from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata
 from sqlalchemy.orm import joinedload
 

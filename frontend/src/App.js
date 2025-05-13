@@ -12,7 +12,7 @@ import PageLayout from "./components/pageLayout/PageLayout";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import Test from "./pages/Test";
-import GoogleMap from "./pages/GoogleMap";
+import GoogleMap from "./pages/googleMap";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import HeatmapPage from "./pages/HeatmapPage";
