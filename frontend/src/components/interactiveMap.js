@@ -35,9 +35,9 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
         gestureHandling={"greedy"}
         disableDefaultUI={true}
       >
-        {/* {carLat !== null && carLng !== null && (
+        {carLat !== null && carLng !== null && (
           <CarMarker position={{ lat: carLat, lng: carLng }} />
-        )} */}
+        )}
 
         {Array.isArray(markers) &&
           markers.map((marker, index) => (

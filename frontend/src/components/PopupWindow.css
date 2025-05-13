@@ -4,10 +4,12 @@ position: absolute;
   left: 10px;
   min-width: 500px;
   min-height: 500px;
+  max-height: 700px;
   background-color: white;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
   z-index: 1000; /* Ensure it stays on top */
 }
 
