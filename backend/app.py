@@ -14,6 +14,7 @@ import tempfile
 from routes.auth_api import auth_bp
 from routes.home import home_bp
 from routes.test import test_bp
+from routes.heatmap_api import heatmap_bp  # Import the heatmap blueprint
 
 from extensions import db, socketio, cors
 from routes.llm import llm_bp
@@ -42,6 +43,7 @@ app.register_blueprint(home_bp)
 app.register_blueprint(test_bp)
 app.register_blueprint(googlemap_bp)
 app.register_blueprint(llm_bp)
+app.register_blueprint(heatmap_bp)  # Register the heatmap blueprint
 
 # Import and register your socket events
 import routes.stream_socket  # <-- important: this registers @socketio.on handlers
