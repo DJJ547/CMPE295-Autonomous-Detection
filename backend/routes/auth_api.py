@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from mysql_db import db
+from extensions import db
 from mysql_models import User
 import jwt
 from datetime import datetime, timedelta, timezone

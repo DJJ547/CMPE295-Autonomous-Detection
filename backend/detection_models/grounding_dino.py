@@ -1,26 +1,31 @@
 import torch
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+from typing import List
 
 # Load model and processor once globally to avoid reloading every time
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "IDEA-Research/grounding-dino-base"
-print("Loading Grounding DINO...")
 processor = AutoProcessor.from_pretrained(model_id)
-model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
+model = AutoModelForZeroShotObjectDetection.from_pretrained(
+    model_id).to(device)
+print("Grounding DINO finished loading")
 
-def detect_objects(image_path: str, text_prompt: str, threshold: float = 0.2, text_threshold: float = 0.2):
-    # Load image
+
+def detect_objects(
+    image_path: str,
+    text_labels: List[List[str]],
+    threshold: float = 0.35,
+    text_threshold: float = 0.35,
+    allowed_keywords: List[str] = ["graffiti", "crack", "tent"]
+):
     image = Image.open(image_path).convert("RGB")
 
-    # Prepare inputs
-    inputs = processor(images=image, text=text_prompt, return_tensors="pt").to(device)
+    inputs = processor(images=image, text=text_labels, return_tensors="pt").to(device)
     outputs = model(**inputs)
 
-    # Get image dimensions for post-processing
-    target_size = torch.tensor([image.size[::-1]]).to(device)  # height, width
+    target_size = torch.tensor([image.size[::-1]]).to(device)
 
-    # Post-process detection results
     results = processor.post_process_grounded_object_detection(
         outputs=outputs,
         input_ids=inputs["input_ids"],
@@ -29,12 +34,21 @@ def detect_objects(image_path: str, text_prompt: str, threshold: float = 0.2, te
         text_threshold=text_threshold
     )[0]
 
-    # Extract results
-    boxes = results["boxes"].tolist() if "boxes" in results else []
-    labels = results["labels"] if "labels" in results else []
-    scores = results["scores"].tolist() if "scores" in results else []
+    boxes = results.get("boxes", [])
+    labels = results.get("labels", [])
+    scores = results.get("scores", [])
 
-    detected = len(boxes) > 0
-    bounding_boxes = [(int(x1), int(y1), int(x2), int(y2)) for (x1, y1, x2, y2) in boxes]
+    filtered_output = []
+    for (box, label, score) in zip(boxes, labels, scores):
+        # Convert label to lowercase and check if any keyword is in it
+        if any(keyword in label.lower() for keyword in allowed_keywords):
+            x1, y1, x2, y2 = map(int, box)
+            filtered_output.append({
+                "box": [x1, y1, x2, y2],
+                "label": label,
+                "score": float(score)
+            })
 
-    return detected, bounding_boxes
+    detected = len(filtered_output) > 0
+    return detected, filtered_output
+

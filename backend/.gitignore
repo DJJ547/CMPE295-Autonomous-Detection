@@ -59,6 +59,7 @@ docs/_build/
 staticfiles/
 static/
 stream_temp/
+detected_temp/
 
 # Celery beat schedule file
 celerybeat-schedule

@@ -1,0 +1,30 @@
+.popup-window {
+position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 500px;
+  min-height: 500px;
+  max-height: 700px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  z-index: 1000; /* Ensure it stays on top */
+}
+
+.popup-content {
+  padding: 20px; /* Add padding for spacing inside the popup */
+}
+
+.close-btn {
+  background-color: transparent;
+  color: black;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  position: absolute;
+  top: 10px; /* Position close button at the top right of the popup */
+  right: 10px;
+  z-index: 1001; /* Ensure the close button is clickable over other content */
+}
