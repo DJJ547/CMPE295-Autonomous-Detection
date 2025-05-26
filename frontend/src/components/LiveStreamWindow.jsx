@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Dropdown,
   Tab,
   Image,
   Segment,
@@ -13,7 +14,9 @@ import {
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
+const socket = io(
+  process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000"
+);
 
 const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [imageList, setImageList] = useState({
@@ -40,6 +43,8 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
 
+  const [selectedModel, setSelectedModel] = useState("GroundingDINO");
+
   const maxLen = Math.max(
     imageList.front.length,
     imageList.back.length,
@@ -47,40 +52,9 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     imageList.right.length
   );
 
-  // useEffect(() => {
-  //   if (!params) return;
-
-  //   const fetchImages = async () => {
-  //     try {
-  //       const res = await axios.get(
-  //         `${process.env.REACT_APP_LOCALHOST}api/stream`,
-  //         {
-  //           params: {
-  //             userId: localStorage.getItem("user_id"),
-  //             startLatInput: params.startLatInput,
-  //             startLngInput: params.startLngInput,
-  //             endLatInput: params.endLatInput,
-  //             endLngInput: params.endLngInput,
-  //             num_points: params.points,
-  //           },
-  //         }
-  //       );
-  //       console.log("S3 image URLs and coordinates:", res.data);
-  //       setImageList(res.data);
-  //       setCurrentIndex(0);
-  //       setLoading(false);
-  //       setIsPlaying(true);
-  //     } catch (error) {
-  //       console.error("Failed to fetch images:", error);
-  //     }
-  //   };
-
-  //   fetchImages();
-  // }, [params]);
-
   useEffect(() => {
     if (!params) return;
-  
+
     setLoading(true);
     setImageList({
       front: [],
@@ -88,7 +62,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       left: [],
       right: [],
     });
-    console.log(localStorage.getItem("user_id"))
+    console.log(localStorage.getItem("user_id"));
     socket.emit("start_stream", {
       userId: localStorage.getItem("user_id"),
       startLatInput: params.startLatInput,
@@ -96,22 +70,23 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       endLatInput: params.endLatInput,
       endLngInput: params.endLngInput,
       num_points: params.points,
+      model: params.model,
     });
   }, [params]);
-  
+
   useEffect(() => {
     socket.on("start_stream", (data) => {
       const { direction, ...imageData } = data;
-  
+
       setImageList((prev) => ({
         ...prev,
         [direction]: [...prev[direction], imageData],
       }));
-  
+
       setLoading(false); // loading ends as soon as first image is received
       setIsPlaying(true);
     });
-  
+
     // cleanup on unmount
     return () => {
       socket.off("start_stream");
@@ -167,6 +142,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       endLatInput: parseFloat(endLatInput).toFixed(6),
       endLngInput: parseFloat(endLngInput).toFixed(6),
       points: numPoints,
+      model: selectedModel,
     });
     setModalOpen(false);
   };
@@ -380,6 +356,26 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
                 value={numPoints}
                 onChange={(e) => setNumPoints(e.target.value)}
               />
+              {/* New Dropdown Field */}
+              <Form.Field>
+                <label>Detection Model</label>
+                <Dropdown
+                  placeholder="Select Model"
+                  fluid
+                  selection
+                  options={[
+                    {
+                      key: "dino",
+                      text: "GroundingDINO",
+                      value: "dino",
+                    },
+                    { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
+                    { key: "yolo", text: "YOLO-v8", value: "yolo" },
+                  ]}
+                  value={selectedModel}
+                  onChange={(e, { value }) => setSelectedModel(value)}
+                />
+              </Form.Field>
               <Form.Field control={Button} content="Update Stream" primary />
             </Form>
           </Modal.Content>

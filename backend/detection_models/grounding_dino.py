@@ -2,6 +2,7 @@ import torch
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 from typing import List
+from config import Config
 
 # Load model and processor once globally to avoid reloading every time
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -9,7 +10,7 @@ model_id = "IDEA-Research/grounding-dino-base"
 processor = AutoProcessor.from_pretrained(model_id)
 model = AutoModelForZeroShotObjectDetection.from_pretrained(
     model_id).to(device)
-print("Grounding DINO finished loading")
+print("Finished loading Grounding DINO")
 
 
 def detect_objects(
@@ -17,7 +18,7 @@ def detect_objects(
     text_labels: List[List[str]],
     threshold: float = 0.35,
     text_threshold: float = 0.35,
-    allowed_keywords: List[str] = ["graffiti", "crack", "tent"]
+    allowed_keywords: List[str] = Config.ALLOWED_KEYWORDS
 ):
     image = Image.open(image_path).convert("RGB")
 
@@ -51,4 +52,3 @@ def detect_objects(
 
     detected = len(filtered_output) > 0
     return detected, filtered_output
-
