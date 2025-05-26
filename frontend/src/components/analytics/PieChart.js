@@ -10,7 +10,7 @@ import {
   Legend
 } from 'recharts';
 import { motion } from 'framer-motion';
-import LoadingSpinner from '../common/LoadingSpinner';
+import LoadingSpinner from '../common/loadspinner';
 
 const LineChartComponent = () => {
   const [lineData, setLineData] = useState([]);

@@ -4,6 +4,8 @@ from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 from typing import List
 
 # Load model and processor once globally to avoid reloading every time
+
+print(torch.cuda.get_device_name(0))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_id = "IDEA-Research/grounding-dino-base"
 processor = AutoProcessor.from_pretrained(model_id)

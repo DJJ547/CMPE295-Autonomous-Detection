@@ -1,6 +1,9 @@
 # this eventlet import needs to stay to the top of everything
 import eventlet
 eventlet.monkey_patch()
+
+
+print("Eventlet monkey patching done.")
 from flask import Flask
 from flask_cors import CORS
 import os
