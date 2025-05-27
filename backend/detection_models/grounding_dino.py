@@ -16,8 +16,8 @@ print("Finished loading Grounding DINO")
 def detect_objects(
     image_path: str,
     text_labels: List[List[str]],
-    threshold: float = 0.35,
-    text_threshold: float = 0.35,
+    threshold: float = 0.5,
+    text_threshold: float = 0.5,
     allowed_keywords: List[str] = Config.ALLOWED_KEYWORDS
 ):
     image = Image.open(image_path).convert("RGB")

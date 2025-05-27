@@ -12,8 +12,9 @@ from flask_socketio import emit
 from detection_models import grounding_dino, owlvit
 from utils import mysql_db_utils
 from datetime import datetime
+from config import Config
 
-text_labels = [["illegal graffiti on the wall", "a crack on the road surface", "a tent on the ground"]]
+text_labels = Config.ALLOWED_KEYWORDS
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
