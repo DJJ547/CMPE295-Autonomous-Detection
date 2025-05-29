@@ -15,9 +15,9 @@ const CarMarker = ({position, icon, info}) => {
   const handleMouseOut = useCallback(() => setInfoWindowShown(false), []);
 
   const carIcon = {
-    url: "/car-marker.png", 
-    scaledSize: new window.google.maps.Size(40, 40), 
-    anchor: new window.google.maps.Point(20, 20), 
+    url: "/car.png", 
+    scaledSize: new window.google.maps.Size(35, 35), 
+    anchor: new window.google.maps.Point(20, 25), 
     className: "marker-icon",
   };
 
@@ -30,6 +30,7 @@ const CarMarker = ({position, icon, info}) => {
         icon = {carIcon}
         onMouseOver={handleMouseOver}
         onMouseOut={handleMouseOut}
+        zIndex={9999}
       />
 
       {/* {infoWindowShown && (

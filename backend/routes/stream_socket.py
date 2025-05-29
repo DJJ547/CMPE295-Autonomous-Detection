@@ -79,7 +79,7 @@ def delete_s3_folder(bucket_name, folder_prefix):
 
 @socketio.on('start_stream')
 def stream_all_images(data):
-    print("✅ Socket successfully established with client")
+    print("Socket successfully established with client")
     user_id = int(data.get('userId'))
     startLat = float(data.get('startLatInput'))
     startLng = float(data.get('startLngInput'))

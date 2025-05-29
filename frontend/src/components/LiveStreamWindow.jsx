@@ -10,6 +10,8 @@ import {
   Loader,
   Modal,
 } from "semantic-ui-react";
+import CoordinateSelectMap from "../components/CoordinateSelectMap";
+
 import axios from "axios";
 import { io } from "socket.io-client";
 
@@ -40,12 +42,15 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
 
+  const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
     imageList.front.length,
     imageList.back.length,
     imageList.left.length,
     imageList.right.length
   );
+
+  const [coordSelectedCount, setCoordSelectedCount] = useState(0);
 
   // useEffect(() => {
   //   if (!params) return;
@@ -80,7 +85,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   useEffect(() => {
     if (!params) return;
-  
+
     setLoading(true);
     setImageList({
       front: [],
@@ -98,20 +103,20 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       num_points: params.points,
     });
   }, [params]);
-  
+
   useEffect(() => {
     socket.on("start_stream", (data) => {
       const { direction, ...imageData } = data;
-  
+
       setImageList((prev) => ({
         ...prev,
         [direction]: [...prev[direction], imageData],
       }));
-  
+
       setLoading(false); // loading ends as soon as first image is received
       setIsPlaying(true);
     });
-  
+
     // cleanup on unmount
     return () => {
       socket.off("start_stream");
@@ -322,7 +327,35 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
           Show Stream Controls
         </Button>
 
+        {/* <Modal open={coordmapOpen} onClose={() => setCoordMapOpen(false)} size="tiny">
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </Modal> */}
+
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
+
           <Modal.Header>
             Stream Controls
             <Icon
@@ -334,6 +367,32 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
               }}
             />
           </Modal.Header>
+
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+
           <Modal.Content>
             <Form onSubmit={handleSubmit}>
               <Form.Field
