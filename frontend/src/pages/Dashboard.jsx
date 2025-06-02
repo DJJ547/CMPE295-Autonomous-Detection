@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import LiveStreamWindow from "../components/LiveStreamWindow";
 import InteractiveMap from "../components/interactiveMap";
+import CoordinateSelectMap from "../components/CoordinateSelectMap";
 
 const Dashboard = () => {
   const [carLat, setCarLat] = useState(null);
@@ -8,9 +9,12 @@ const Dashboard = () => {
 
   const [markers, setMarkers] = useState([]);
 
+  const [coordSelect, setCoordSelect] = useState(false);
+  const [startCoord, setStartCoord] = useState(null);
+  const [endCoord, setEndCoord] = useState(null);
   // Function to fetch markers from the backend
   const fetchMarkers = () => {
-    fetch("http://localhost:8000/api/markers")
+    fetch("http://localhost:8000/api/anomalies")
       .then((response) => response.json())
       .then((data) => {
         setMarkers(data);
@@ -45,11 +49,12 @@ const Dashboard = () => {
           overflow: "hidden",
         }}
       >
-        <InteractiveMap carLat={carLat} carLng={carLng} markers={markers} />
+        {!coordSelect && <InteractiveMap carLat={carLat} carLng={carLng} markers={markers} />}
+        {coordSelect && <CoordinateSelectMap/>}
       </div>
 
       <div style={{ width: "30%" }}>
-        <LiveStreamWindow setCarLat={setCarLat} setCarLng={setCarLng} />
+        <LiveStreamWindow setCarLat={setCarLat} setCarLng={setCarLng} setCoordSelect = {setCoordSelect}/>
       </div>
     </div>
   );

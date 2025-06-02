@@ -10,7 +10,12 @@ import {
   Loader,
   Modal,
 } from "semantic-ui-react";
+import CoordinateSelectMap from "../components/CoordinateSelectMap";
+
 import axios from "axios";
+import { io } from "socket.io-client";
+
+const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
 
 const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [imageList, setImageList] = useState({
@@ -37,6 +42,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
 
+  const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
     imageList.front.length,
     imageList.back.length,
@@ -44,36 +50,78 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     imageList.right.length
   );
 
+  const [coordSelectedCount, setCoordSelectedCount] = useState(0);
+
+  // useEffect(() => {
+  //   if (!params) return;
+
+  //   const fetchImages = async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         `${process.env.REACT_APP_LOCALHOST}api/stream`,
+  //         {
+  //           params: {
+  //             userId: localStorage.getItem("user_id"),
+  //             startLatInput: params.startLatInput,
+  //             startLngInput: params.startLngInput,
+  //             endLatInput: params.endLatInput,
+  //             endLngInput: params.endLngInput,
+  //             num_points: params.points,
+  //           },
+  //         }
+  //       );
+  //       console.log("S3 image URLs and coordinates:", res.data);
+  //       setImageList(res.data);
+  //       setCurrentIndex(0);
+  //       setLoading(false);
+  //       setIsPlaying(true);
+  //     } catch (error) {
+  //       console.error("Failed to fetch images:", error);
+  //     }
+  //   };
+
+  //   fetchImages();
+  // }, [params]);
+
   useEffect(() => {
     if (!params) return;
 
-    const fetchImages = async () => {
-      try {
-        const res = await axios.get(
-          `${process.env.REACT_APP_LOCALHOST}api/stream`,
-          {
-            params: {
-              userId: localStorage.getItem("user_id"),
-              startLatInput: params.startLatInput,
-              startLngInput: params.startLngInput,
-              endLatInput: params.endLatInput,
-              endLngInput: params.endLngInput,
-              num_points: params.points,
-            },
-          }
-        );
-        console.log("S3 image URLs and coordinates:", res.data);
-        setImageList(res.data);
-        setCurrentIndex(0);
-        setLoading(false);
-        setIsPlaying(true);
-      } catch (error) {
-        console.error("Failed to fetch images:", error);
-      }
-    };
-
-    fetchImages();
+    setLoading(true);
+    setImageList({
+      front: [],
+      back: [],
+      left: [],
+      right: [],
+    });
+    console.log(localStorage.getItem("user_id"))
+    socket.emit("start_stream", {
+      userId: localStorage.getItem("user_id"),
+      startLatInput: params.startLatInput,
+      startLngInput: params.startLngInput,
+      endLatInput: params.endLatInput,
+      endLngInput: params.endLngInput,
+      num_points: params.points,
+    });
   }, [params]);
+
+  useEffect(() => {
+    socket.on("start_stream", (data) => {
+      const { direction, ...imageData } = data;
+
+      setImageList((prev) => ({
+        ...prev,
+        [direction]: [...prev[direction], imageData],
+      }));
+
+      setLoading(false); // loading ends as soon as first image is received
+      setIsPlaying(true);
+    });
+
+    // cleanup on unmount
+    return () => {
+      socket.off("start_stream");
+    };
+  }, []);
 
   useEffect(() => {
     if (!isPlaying || maxLen === 0) return;
@@ -140,34 +188,52 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   const directions = ["front", "back", "left", "right"];
 
-  const renderBoundingBoxes = (boxes) => {
+  const renderBoundingBoxes = (boxes, labels = [], scores = []) => {
     const scaleX = imgDims.width / 640;
     const scaleY = imgDims.height / 640;
-  
+
     return boxes.map(([x1, y1, x2, y2], idx) => {
       const left = x1 * scaleX;
       const top = y1 * scaleY;
       const width = (x2 - x1) * scaleX;
       const height = (y2 - y1) * scaleY;
-  
+      const label = labels[idx] || "";
+      const score = scores[idx] !== undefined ? scores[idx].toFixed(2) : "";
+
       return (
         <div
           key={idx}
-          style={{
-            position: "absolute",
-            left,
-            top,
-            width,
-            height,
-            border: "2px solid red",
-            backgroundColor: "rgba(255, 0, 0, 0.2)",
-            zIndex: 5,
-          }}
-        />
+          style={{ position: "absolute", left, top, width, height, zIndex: 5 }}
+        >
+          {/* Label positioned above the bounding box */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-14px", // move above the box
+              left: "0px",
+              color: "red",
+              fontSize: "10px",
+              fontWeight: 500,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label} ({score})
+          </div>
+
+          {/* Bounding box */}
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "2px solid red",
+              backgroundColor: "rgba(255, 0, 0, 0.2)",
+              position: "relative",
+            }}
+          />
+        </div>
       );
     });
   };
-  
 
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
@@ -219,7 +285,11 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
                     left: 0,
                   }}
                 />
-                {renderBoundingBoxes(boxes)}
+                {renderBoundingBoxes(
+                  boxes,
+                  imageData?.labels,
+                  imageData?.scores
+                )}
               </div>
             )}
 
@@ -257,7 +327,35 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
           Show Stream Controls
         </Button>
 
+        {/* <Modal open={coordmapOpen} onClose={() => setCoordMapOpen(false)} size="tiny">
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </Modal> */}
+
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
+
           <Modal.Header>
             Stream Controls
             <Icon
@@ -269,6 +367,32 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
               }}
             />
           </Modal.Header>
+
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+
           <Modal.Content>
             <Form onSubmit={handleSubmit}>
               <Form.Field

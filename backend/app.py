@@ -1,23 +1,33 @@
+# this eventlet import needs to stay to the top of everything
+import eventlet
+eventlet.monkey_patch()
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from mysql_db import db
 import os
 
 # Import blueprints
 from routes.auth_api import auth_bp
 from routes.home import home_bp
 from routes.test import test_bp
+<<<<<<< HEAD
 from routes.google_streetview_api import streetview_bp
 from routes.graphs_api import graphs_bp
+=======
+>>>>>>> origin/main
 
+from extensions import db, socketio, cors
+from routes.llm import llm_bp
+from routes.google_map_api import googlemap_bp
 from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize Flask & extensions
 app = Flask(__name__)
+<<<<<<< HEAD
 # CORS(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
+=======
+>>>>>>> origin/main
 
 # Config
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -25,18 +35,29 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{os.getenv("MYSQL_DB_U
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'super-secret-key'
 
-# Initialize DB with app
+# Initialize DB, socket, cors with app
 db.init_app(app)
+socketio.init_app(app)
+cors.init_app(app)
 
 # Register blueprints directly
 app.register_blueprint(auth_bp)
 app.register_blueprint(home_bp)
 app.register_blueprint(test_bp)
+<<<<<<< HEAD
 app.register_blueprint(streetview_bp)
 app.register_blueprint(graphs_bp)
+=======
+app.register_blueprint(googlemap_bp)
+app.register_blueprint(llm_bp)
+
+# Import and register your socket events
+import routes.stream_socket  # <-- important: this registers @socketio.on handlers
+>>>>>>> origin/main
 
 # Run the app
 if __name__ == '__main__':
     # with app.app_context():
     #     db.create_all()  # create tables if not exist
-    app.run(debug=True, port=8000)
+    # app.run(debug=True, port=8000)
+    socketio.run(app, host='0.0.0.0', port=8000)

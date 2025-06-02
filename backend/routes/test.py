@@ -19,3 +19,4 @@ def get_markers():
     
     
     return jsonify(base_markers)
+

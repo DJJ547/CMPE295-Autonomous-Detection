@@ -1,5 +1,6 @@
 import React from "react";
 import Heatmap from "../components/Heatmap";
+import ChatWindow from "../components/ChatWindow";
 import BarChart from "../components/analytics/BarChart";
 import PieChart from "../components/analytics/PieChart";
 import LineChart from "../components/analytics/LineChart";
@@ -32,16 +33,30 @@ const Analytics = () => {
       <div
         style={{
           flexGrow: 1,
-          padding: "1.5rem",
           overflow: "auto",
+          display: "flex",
+          gap: "1.5rem",
+        flexDirection: "row",
         }}
       >
+      <div
+          style={{
+            display: "flex",
+            gap: "1.5rem",
+            width: "100%",
+            height: "100%", // optional: to stretch height evenly
+          }}
+        >
+        <ChatWindow/>
+        </div>
+        
         <div
           style={{
             display: "flex",
             gap: "1.5rem",
             width: "100%",
             height: "100%", // optional: to stretch height evenly
+
           }}
         >
           <div style={{ flex: 1 }}>
