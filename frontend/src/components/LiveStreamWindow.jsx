@@ -11,7 +11,7 @@ import {
   Loader,
   Modal,
 } from "semantic-ui-react";
-import CoordinateSelectMap from "../components/CoordinateSelectMap";
+import CoordinateSelectMap from "./CoordinateSelectMap";
 
 import axios from "axios";
 import { io } from "socket.io-client";
