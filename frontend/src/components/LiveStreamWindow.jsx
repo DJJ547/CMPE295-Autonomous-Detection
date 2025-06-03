@@ -11,6 +11,8 @@ import {
   Loader,
   Modal,
 } from "semantic-ui-react";
+import CoordinateSelectMap from "../components/CoordinateSelectMap";
+
 import axios from "axios";
 import { io } from "socket.io-client";
 
@@ -45,12 +47,46 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   const [selectedModel, setSelectedModel] = useState("GroundingDINO");
 
+  const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
     imageList.front.length,
     imageList.back.length,
     imageList.left.length,
     imageList.right.length
   );
+
+  const [coordSelectedCount, setCoordSelectedCount] = useState(0);
+
+  // useEffect(() => {
+  //   if (!params) return;
+
+  //   const fetchImages = async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         `${process.env.REACT_APP_LOCALHOST}api/stream`,
+  //         {
+  //           params: {
+  //             userId: localStorage.getItem("user_id"),
+  //             startLatInput: params.startLatInput,
+  //             startLngInput: params.startLngInput,
+  //             endLatInput: params.endLatInput,
+  //             endLngInput: params.endLngInput,
+  //             num_points: params.points,
+  //           },
+  //         }
+  //       );
+  //       console.log("S3 image URLs and coordinates:", res.data);
+  //       setImageList(res.data);
+  //       setCurrentIndex(0);
+  //       setLoading(false);
+  //       setIsPlaying(true);
+  //     } catch (error) {
+  //       console.error("Failed to fetch images:", error);
+  //     }
+  //   };
+
+  //   fetchImages();
+  // }, [params]);
 
   useEffect(() => {
     if (!params) return;
@@ -299,7 +335,35 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
           Show Stream Controls
         </Button>
 
+        {/* <Modal open={coordmapOpen} onClose={() => setCoordMapOpen(false)} size="tiny">
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </Modal> */}
+
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
+
           <Modal.Header>
             Stream Controls
             <Icon
@@ -311,6 +375,32 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
               }}
             />
           </Modal.Header>
+
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+
           <Modal.Content>
             <Form onSubmit={handleSubmit}>
               <Form.Field

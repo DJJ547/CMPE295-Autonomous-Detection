@@ -12,7 +12,8 @@ const center = {
 const InteractiveMap = ({ carLat, carLng, markers }) => {
   const [position, setPosition] = useState(center);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const speed = 1;
+  const [startCoord, setStartCoord] = useState(null);
+  const [endCoord, setEndCoord] = useState(null);
 
 
     // Handle marker click
@@ -27,13 +28,30 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
   };
 
 
+
   return (
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
       <Map
         defaultCenter={position}
-        defaultZoom={15}
+        defaultZoom={14}
         gestureHandling={"greedy"}
         disableDefaultUI={true}
+        options={{
+          styles: [
+            // Hide all POIs (restaurants, shops, etc.)
+            {
+              featureType: "poi",
+              elementType: "all",
+              stylers: [{ visibility: "off" }]
+            },
+            // Hide transit (bus, train, subway lines/stations)
+            {
+              featureType: "transit",
+              elementType: "all",
+              stylers: [{ visibility: "off" }]
+            }
+          ]
+        }}
       >
         {carLat !== null && carLng !== null && (
           <CarMarker position={{ lat: carLat, lng: carLng }} />
