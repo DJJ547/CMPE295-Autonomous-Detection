@@ -65,3 +65,26 @@ class DetectionMetadata(db.Model):
     score = db.Column(db.Float, nullable=False)
     type = db.Column(db.Enum(DetectionType), nullable=False)
     
+class TaskStatus(enum.Enum):
+    created = "created"
+    verified = "verified"
+    assigned = "assigned"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+    
+class Task(db.Model):
+    __tablename__ = 'tasks'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    metadata_id = db.Column(db.Integer, db.ForeignKey('detection_metadata.id'), nullable=False)
+    worker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.Enum(TaskStatus), nullable=False, default=TaskStatus.assigned)
+    notes = db.Column(db.String(500), nullable=True)
+    scheduled_time = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+
+    # Relationships (optional)
+    metadata = db.relationship("DetectionMetadata", backref="tasks")
+    worker = db.relationship("User", backref="tasks")
+    

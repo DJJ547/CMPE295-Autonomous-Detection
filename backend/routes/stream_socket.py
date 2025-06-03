@@ -12,8 +12,9 @@ from flask_socketio import emit
 from detection_models import grounding_dino, owlvit
 from utils import mysql_db_utils
 from datetime import datetime
+from config import Config
 
-text_labels = [["illegal graffiti on the wall", "a crack on the road surface", "a tent on the ground"]]
+text_labels = Config.ALLOWED_KEYWORDS
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
@@ -79,7 +80,7 @@ def delete_s3_folder(bucket_name, folder_prefix):
 
 @socketio.on('start_stream')
 def stream_all_images(data):
-    print("✅ Socket successfully established with client")
+    print("Socket successfully established with client")
     user_id = int(data.get('userId'))
     startLat = float(data.get('startLatInput'))
     startLng = float(data.get('startLngInput'))
@@ -261,3 +262,4 @@ def handle_detection_result(
             mysql_db_utils.register_anomaly_to_db(
                 lat, lon, address, direction, s3_detected_image_url, output
             )
+            

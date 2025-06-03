@@ -136,6 +136,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       return;
 
     setLoading(true);
+    setCurrentIndex(0);
     setParams({
       startLatInput: parseFloat(startLatInput).toFixed(6),
       startLngInput: parseFloat(startLngInput).toFixed(6),
