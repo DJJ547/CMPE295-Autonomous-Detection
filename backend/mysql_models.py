@@ -85,6 +85,6 @@ class Task(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     # Relationships (optional)
-    metadata = db.relationship("DetectionMetadata", backref="tasks")
+    metadatas = db.relationship("DetectionMetadata", backref="tasks")
     worker = db.relationship("User", backref="tasks")
     

@@ -67,3 +67,5 @@ celerybeat-schedule
 # Ignore temporary files
 *.swp
 *.swo
+
+model_checkpoint/

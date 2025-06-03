@@ -20,7 +20,7 @@ dino_processor = AutoProcessor.from_pretrained(dino_model_id)
 dino_model = AutoModelForZeroShotObjectDetection.from_pretrained(dino_model_id).to(device)
 
 # SAM
-sam_checkpoint = "sam_vit_h_4b8939.pth"  # Ensure this is the correct path
+sam_checkpoint = "model_checkpoint/sam_vit_h_4b8939.pth"  # Ensure this is the correct path
 sam = sam_model_registry["vit_h"](checkpoint=sam_checkpoint).to(device)
 sam_predictor = SamPredictor(sam)
 
