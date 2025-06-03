@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Dropdown,
   Tab,
   Image,
   Segment,
@@ -10,10 +11,14 @@ import {
   Loader,
   Modal,
 } from "semantic-ui-react";
+import CoordinateSelectMap from "../components/CoordinateSelectMap";
+
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
+const socket = io(
+  process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000"
+);
 
 const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [imageList, setImageList] = useState({
@@ -40,12 +45,17 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
 
+  const [selectedModel, setSelectedModel] = useState("GroundingDINO");
+
+  const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
     imageList.front.length,
     imageList.back.length,
     imageList.left.length,
     imageList.right.length
   );
+
+  const [coordSelectedCount, setCoordSelectedCount] = useState(0);
 
   // useEffect(() => {
   //   if (!params) return;
@@ -80,7 +90,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   useEffect(() => {
     if (!params) return;
-  
+
     setLoading(true);
     setImageList({
       front: [],
@@ -88,7 +98,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       left: [],
       right: [],
     });
-    console.log(localStorage.getItem("user_id"))
+    console.log(localStorage.getItem("user_id"));
     socket.emit("start_stream", {
       userId: localStorage.getItem("user_id"),
       startLatInput: params.startLatInput,
@@ -96,22 +106,23 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       endLatInput: params.endLatInput,
       endLngInput: params.endLngInput,
       num_points: params.points,
+      model: params.model,
     });
   }, [params]);
-  
+
   useEffect(() => {
     socket.on("start_stream", (data) => {
       const { direction, ...imageData } = data;
-  
+
       setImageList((prev) => ({
         ...prev,
         [direction]: [...prev[direction], imageData],
       }));
-  
+
       setLoading(false); // loading ends as soon as first image is received
       setIsPlaying(true);
     });
-  
+
     // cleanup on unmount
     return () => {
       socket.off("start_stream");
@@ -161,12 +172,14 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       return;
 
     setLoading(true);
+    setCurrentIndex(0);
     setParams({
       startLatInput: parseFloat(startLatInput).toFixed(6),
       startLngInput: parseFloat(startLngInput).toFixed(6),
       endLatInput: parseFloat(endLatInput).toFixed(6),
       endLngInput: parseFloat(endLngInput).toFixed(6),
       points: numPoints,
+      model: selectedModel,
     });
     setModalOpen(false);
   };
@@ -322,7 +335,35 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
           Show Stream Controls
         </Button>
 
+        {/* <Modal open={coordmapOpen} onClose={() => setCoordMapOpen(false)} size="tiny">
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </Modal> */}
+
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
+
           <Modal.Header>
             Stream Controls
             <Icon
@@ -334,6 +375,32 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
               }}
             />
           </Modal.Header>
+
+          <div style={{ textAlign: "center"}}>
+            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+              <CoordinateSelectMap
+                startLat={startLatInput}
+                startLng={startLngInput}
+                endLat={endLatInput}
+                endLng={endLngInput}
+                setStartLatInput={setStartLatInput}
+                setStartLngInput={setStartLngInput}
+                setEndLatInput={setEndLatInput}
+                setEndLngInput={setEndLngInput}
+                onCoordinateSelected={() => {
+                  setCoordSelectedCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 2) {
+                      setCoordMapOpen(false); // Auto-close after two selections
+                      return 0; // reset countF
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+          </div>
+
           <Modal.Content>
             <Form onSubmit={handleSubmit}>
               <Form.Field
@@ -380,6 +447,26 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
                 value={numPoints}
                 onChange={(e) => setNumPoints(e.target.value)}
               />
+              {/* New Dropdown Field */}
+              <Form.Field>
+                <label>Detection Model</label>
+                <Dropdown
+                  placeholder="Select Model"
+                  fluid
+                  selection
+                  options={[
+                    {
+                      key: "dino",
+                      text: "GroundingDINO",
+                      value: "dino",
+                    },
+                    { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
+                    { key: "yolo", text: "YOLO-v8", value: "yolo" },
+                  ]}
+                  value={selectedModel}
+                  onChange={(e, { value }) => setSelectedModel(value)}
+                />
+              </Form.Field>
               <Form.Field control={Button} content="Update Stream" primary />
             </Form>
           </Modal.Content>
