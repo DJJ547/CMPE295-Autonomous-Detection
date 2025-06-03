@@ -51,7 +51,8 @@ class DetectionImage(db.Model):
 class DetectionType(enum.Enum):
     tent = "tent"
     graffiti = "graffiti"
-    road_damage = "road damage"
+    road_damage = "road_damage"
+    trash = "trash"
 
 class DetectionMetadata(db.Model):
     __tablename__ = 'detection_metadata'  # must match actual table name in MySQL

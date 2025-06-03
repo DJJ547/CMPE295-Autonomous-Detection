@@ -13,8 +13,10 @@ def get_detected_type(label: str) -> DetectionType:
         return DetectionType.graffiti
     elif "tent" in label:
         return DetectionType.tent
-    elif "crack" in label or "hole" in label:
+    elif "damage" in label or "crack" in label or "hole" in label:
         return DetectionType.road_damage
+    elif "trash" in label:
+        return DetectionType.trash
     else:
         raise ValueError(f"Unknown label: {label}")
 

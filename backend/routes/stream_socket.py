@@ -14,7 +14,7 @@ from utils import mysql_db_utils
 from datetime import datetime
 from config import Config
 
-text_labels = Config.ALLOWED_KEYWORDS
+text_labels = Config.LABELS
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
