@@ -9,6 +9,9 @@ from transformers import (
 )
 from config import Config
 
+# Load model and processor once globally to avoid reloading every time
+
+print(torch.cuda.get_device_name(0))
 import torch.nn.functional as F
 from sentence_transformers import CrossEncoder
 

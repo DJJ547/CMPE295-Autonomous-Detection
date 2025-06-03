@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -9,28 +9,51 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
-
-import data from '../../mock/bar_chart_data.json';
+import { motion } from 'framer-motion';
+import LoadingSpinner from '../common/loadspinner';
 
 const BarChartComponent = () => {
-  if (!data || !Array.isArray(data)) {
-    return <div className="text-red-500">Error: Bar chart data is not loaded.</div>;
+  const [chartData, setChartData] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/graphs/trends')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch bar chart data');
+        }
+        return response.json();
+      })
+      .then(data => setChartData(data))
+      .catch(error => setError(error.message));
+  }, []);
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
+
+  if (!chartData.length) {
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="bg-white rounded shadow p-4">
-      <h2 className="text-xl font-semibold mb-2">Monthly Vehicle Traffic</h2>
+    <motion.div 
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Monthly Urban Issues Detected</h2>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="month" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Bar dataKey="vehicles" fill="#3b82f6" />
+          <Bar dataKey="issues_detected" fill="#3b82f6" />
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 };
 

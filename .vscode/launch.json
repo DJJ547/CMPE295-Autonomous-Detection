@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Flask Backend",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/backend/app.py",  
+        "console": "integratedTerminal",
+        "env": {
+          "FLASK_ENV": "development"
+        },
+        "envFile": "${workspaceFolder}/.env",
+        "cwd": "${workspaceFolder}/backend",
+        "justMyCode": true,
+        "args": ["--reload"]
+      }
+    ]
+  }
+  
