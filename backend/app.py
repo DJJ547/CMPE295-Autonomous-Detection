@@ -2,26 +2,17 @@
 import eventlet
 eventlet.monkey_patch()
 
-print("✅ Eventlet monkey patching done.")
 
+print("Eventlet monkey patching done.")
 from flask import Flask
 from flask_cors import CORS
 import os
-from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 
-# Load environment variables early
-load_dotenv()
-
-# Optional: central config support
-from config import Config
-
-# Flask extensions
-from extensions import db, socketio, cors
-
-# AWS or other cloud support
 import boto3
 import tempfile
+from extensions import db, socketio, cors
 
 # Import blueprints
 from routes.auth_api import auth_bp
@@ -35,6 +26,18 @@ from routes.llm import llm_bp
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)  # centralized config class
+from routes.heatmap_api import heatmap_bp  # Import the heatmap blueprint
+
+from extensions import db, socketio, cors
+from routes.llm import llm_bp
+from routes.google_map_api import googlemap_bp
+
+# Load environment variables
+load_dotenv()
+from config import Config  # 👈 use centralized config
+# Initialize Flask app
+app = Flask(__name__)
+app.config.from_object(Config)  # 👈 central config loading
 
 # Additional Config
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -42,6 +45,7 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('MYSQL_DB_USERNAME')}:{os.getenv('MYSQL_DB_PASSWORD')}@{os.getenv('MYSQL_DB_HOST')}:{os.getenv('MYSQL_DB_PORT')}/{os.getenv('MYSQL_DB_NAME')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'super-secret-key'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # Initialize extensions
 db.init_app(app)
@@ -68,4 +72,13 @@ def index():
 # Run the app
 if __name__ == '__main__':
     print("🚀 Starting backend on http://localhost:8000")
+app.register_blueprint(googlemap_bp)
+app.register_blueprint(llm_bp)
+app.register_blueprint(heatmap_bp)  # Register the heatmap blueprint
+
+# Register SocketIO events
+import routes.stream_socket
+
+# Run the app
+if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=8000)

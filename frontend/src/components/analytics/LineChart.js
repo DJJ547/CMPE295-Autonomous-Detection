@@ -8,7 +8,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { motion } from 'framer-motion';
-import LoadingSpinner from '../common/LoadingSpinner';
+import LoadingSpinner from '../common/loadspinner';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 

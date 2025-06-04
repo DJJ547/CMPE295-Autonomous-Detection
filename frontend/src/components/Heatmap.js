@@ -1,47 +1,112 @@
-import React, { useEffect, useState } from "react";
+// frontend/src/components/Heatmap.js
+import React, { useEffect, useState, useCallback } from "react";
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
-import mockDataPoints from '../mock/heatmap_data.json'; // Import the JSON data
-
 
 const center = { lat: 37.7749, lng: -122.4194 }; // San Francisco
 
-// Separate component to access the map instance
-const HeatmapLayer = () => {
+const HeatmapLayer = ({ data }) => {
   const map = useMap();
-  
+
   useEffect(() => {
     if (!map || !window.google || !window.google.maps.visualization) {
       console.log("Map or google visualization not loaded yet");
       return;
     }
 
-    // Convert data points to Google Maps LatLng objects using the imported JSON
-    const heatmapData = mockDataPoints.map(point => ({
+    if (!data || data.length === 0) {
+      // Clear heatmap if no data
+      const currentHeatmapLayer = map.dataHeatmapLayer;
+      if (currentHeatmapLayer) {
+        currentHeatmapLayer.setMap(null);
+        map.dataHeatmapLayer = null;
+      }
+      return;
+    }
+
+    const heatmapData = data.map(point => ({
       location: new window.google.maps.LatLng(point.lat, point.lng),
       weight: point.weight
     }));
 
-    // Create the heatmap layer
-    const heatmapLayer = new window.google.maps.visualization.HeatmapLayer({
+    // Clear previous heatmap layer if it exists
+    const currentHeatmapLayer = map.dataHeatmapLayer;
+    if (currentHeatmapLayer) {
+      currentHeatmapLayer.setMap(null);
+    }
+
+    const newHeatmapLayer = new window.google.maps.visualization.HeatmapLayer({
       data: heatmapData,
-      radius: 10, // Adjusted radius for better visualization
-      opacity: 0.7  // Slightly increased opacity
+      radius: 10,
+      opacity: 0.7
     });
 
-    heatmapLayer.setMap(map);
+    newHeatmapLayer.setMap(map);
+    map.dataHeatmapLayer = newHeatmapLayer; // Store reference to the current layer
 
     return () => {
-      // Clean up when component unmounts
-      heatmapLayer.setMap(null);
+      // Clean up when component unmounts or data/map changes
+      if (map.dataHeatmapLayer) {
+        map.dataHeatmapLayer.setMap(null);
+        map.dataHeatmapLayer = null;
+      }
     };
-  }, [map]);
+  }, [map, data]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 const HeatmapComponent = () => {
+  const [allHeatmapData, setAllHeatmapData] = useState([]);
+  const [filteredHeatmapData, setFilteredHeatmapData] = useState([]);
+  const [selectedType, setSelectedType] = useState('all');
+
+  const fetchAllHeatmapData = useCallback(async () => {
+    // Using environment variable for the base URL
+    const baseUrl = process.env.REACT_APP_LOCALHOST || 'http://127.0.0.1:8000'; // Fallback if not set
+    const url = `${baseUrl}/api/heatmap/data`; // Your adjusted endpoint
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setAllHeatmapData(data);
+      console.log("Fetched all heatmap data:", data);
+    } catch (error) {
+      console.error("Error fetching heatmap data:", error);
+      setAllHeatmapData([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllHeatmapData();
+  }, [fetchAllHeatmapData]);
+
+  useEffect(() => {
+    if (selectedType === 'all') {
+      setFilteredHeatmapData(allHeatmapData);
+    } else {
+      const filtered = allHeatmapData.filter(point => point.type === selectedType);
+      setFilteredHeatmapData(filtered);
+    }
+  }, [allHeatmapData, selectedType]);
+
+  const handleTypeChange = (event) => {
+    setSelectedType(event.target.value);
+  };
+
   return (
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
+      <div style={{ paddingBottom: '10px' }}>
+        <label htmlFor="detection-type-select">Select Detection Type: </label>
+        <select id="detection-type-select" value={selectedType} onChange={handleTypeChange}>
+          <option value="all">All</option>
+          <option value="graffiti">Graffiti</option>
+          <option value="road damage">Road Damage</option>
+          <option value="tent">Tent</option>
+        </select>
+      </div>
       <div style={{ width: "100%", height: "500px" }}>
         <Map
           defaultCenter={center}
@@ -49,7 +114,7 @@ const HeatmapComponent = () => {
           mapId=""
           style={{ width: "100%", height: "100%" }}
         >
-          <HeatmapLayer />
+          <HeatmapLayer data={filteredHeatmapData} />
         </Map>
       </div>
     </APIProvider>

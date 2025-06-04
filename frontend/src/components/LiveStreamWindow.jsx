@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Dropdown,
   Tab,
   Image,
   Segment,
@@ -10,12 +11,14 @@ import {
   Loader,
   Modal,
 } from "semantic-ui-react";
-import CoordinateSelectMap from "../components/CoordinateSelectMap";
+import CoordinateSelectMap from "./CoordinateSelectMap";
 
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
+const socket = io(
+  process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000"
+);
 
 const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [imageList, setImageList] = useState({
@@ -41,6 +44,8 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [endLngInput, setEndLngInput] = useState("");
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
+
+  const [selectedModel, setSelectedModel] = useState("GroundingDINO");
 
   const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
@@ -93,7 +98,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       left: [],
       right: [],
     });
-    console.log(localStorage.getItem("user_id"))
+    console.log(localStorage.getItem("user_id"));
     socket.emit("start_stream", {
       userId: localStorage.getItem("user_id"),
       startLatInput: params.startLatInput,
@@ -101,6 +106,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       endLatInput: params.endLatInput,
       endLngInput: params.endLngInput,
       num_points: params.points,
+      model: params.model,
     });
   }, [params]);
 
@@ -166,12 +172,14 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       return;
 
     setLoading(true);
+    setCurrentIndex(0);
     setParams({
       startLatInput: parseFloat(startLatInput).toFixed(6),
       startLngInput: parseFloat(startLngInput).toFixed(6),
       endLatInput: parseFloat(endLatInput).toFixed(6),
       endLngInput: parseFloat(endLngInput).toFixed(6),
       points: numPoints,
+      model: selectedModel,
     });
     setModalOpen(false);
   };
@@ -439,6 +447,26 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
                 value={numPoints}
                 onChange={(e) => setNumPoints(e.target.value)}
               />
+              {/* New Dropdown Field */}
+              <Form.Field>
+                <label>Detection Model</label>
+                <Dropdown
+                  placeholder="Select Model"
+                  fluid
+                  selection
+                  options={[
+                    {
+                      key: "dino",
+                      text: "GroundingDINO",
+                      value: "dino",
+                    },
+                    { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
+                    { key: "yolo", text: "YOLO-v8", value: "yolo" },
+                  ]}
+                  value={selectedModel}
+                  onChange={(e, { value }) => setSelectedModel(value)}
+                />
+              </Form.Field>
               <Form.Field control={Button} content="Update Stream" primary />
             </Form>
           </Modal.Content>

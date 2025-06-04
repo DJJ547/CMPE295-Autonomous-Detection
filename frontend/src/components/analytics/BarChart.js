@@ -10,6 +10,7 @@ import {
   Legend
 } from 'recharts';
 import { motion } from 'framer-motion';
+import LoadingSpinner from '../common/loadspinner';
 
 const BarChartComponent = ({ data }) => {
   if (!data || !data.length) {

@@ -9,11 +9,12 @@ import boto3
 
 from extensions import socketio
 from flask_socketio import emit
-from detection_models import grounding_dino
+from detection_models import grounding_dino, owlvit
 from utils import mysql_db_utils
 from datetime import datetime
+from config import Config
 
-text_labels = [["illegal graffiti on the wall", "a crack on the road surface", "a tent on the ground"]]
+text_labels = Config.LABELS
 
 
 def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
@@ -86,6 +87,7 @@ def stream_all_images(data):
     endLat = float(data.get('endLatInput'))
     endLng = float(data.get('endLngInput'))
     num_points = int(data.get('num_points'))
+    model = str(data.get('model'))
 
     coords = generate_coordinates(
         startLat, startLng, endLat, endLng, num_points)
@@ -206,26 +208,25 @@ def stream_all_images(data):
                 with open(stream_temp_local_path, "wb") as f:
                     f.write(response.content)
 
-                # Run Grounding DINO detection
+                # Run selected detection model
                 try:
-                    detected, output = grounding_dino.detect_objects(
-                        stream_temp_local_path, text_labels)
-                    # If anomalies detected, store the current image into S3 folder named "detected_image"
-                    if detected:
-                        detected_temp_local_path = os.path.join(
-                            detected_temp_dir, image_name)
-                        with open(detected_temp_local_path, "wb") as f:
-                            f.write(response.content)
-                        s3_detected_image_url = upload_file_to_s3(
-                            detected_temp_local_path, bucket_name, s3_detected_root_folder_name)
-                        if s3_detected_image_url:
-                            mysql_db_utils.register_anomaly_to_db(
-                                lat, lon, address, direction, s3_detected_image_url, output)
+                    if model == 'dino':
+                        detected, output = grounding_dino.detect_objects(
+                            stream_temp_local_path, text_labels)
+                    elif model == 'owlvit':
+                        detected, output = owlvit.detect_objects(
+                            stream_temp_local_path, text_labels)
+
+                    handle_detection_result(
+                        detected, output, image_name, response.content,
+                        detected_temp_dir, bucket_name, s3_detected_root_folder_name,
+                        lat, lon, address, direction
+                    )
 
                 except Exception as e:
-                    print(
-                        f"Detection failed on {detected_temp_local_path}: {e}")
+                    print(f"Detection failed on {image_name}: {e}")
                     detected, output = False, []
+
 
                 # Store images returned by Google Street View API into S3 folder named "user{user_id}-livestream"
                 s3_stream_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
@@ -245,3 +246,20 @@ def stream_all_images(data):
                 })
             else:
                 print(f"Failed to fetch {direction} image at coordinate ({lat}, {lon})")
+
+def handle_detection_result(
+    detected, output, image_name, response_content, detected_temp_dir,
+    bucket_name, s3_detected_root_folder_name, lat, lon, address, direction
+):
+    if detected:
+        detected_temp_local_path = os.path.join(detected_temp_dir, image_name)
+        with open(detected_temp_local_path, "wb") as f:
+            f.write(response_content)
+        s3_detected_image_url = upload_file_to_s3(
+            detected_temp_local_path, bucket_name, s3_detected_root_folder_name
+        )
+        if s3_detected_image_url:
+            mysql_db_utils.register_anomaly_to_db(
+                lat, lon, address, direction, s3_detected_image_url, output
+            )
+            
