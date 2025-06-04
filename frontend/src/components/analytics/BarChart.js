@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   BarChart,
   Bar,
@@ -10,30 +10,10 @@ import {
   Legend
 } from 'recharts';
 import { motion } from 'framer-motion';
-import LoadingSpinner from '../common/LoadingSpinner';
 
-const BarChartComponent = () => {
-  const [chartData, setChartData] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch('http://localhost:8000/api/graphs/trends')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch bar chart data');
-        }
-        return response.json();
-      })
-      .then(data => setChartData(data))
-      .catch(error => setError(error.message));
-  }, []);
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
-
-  if (!chartData.length) {
-    return <LoadingSpinner />;
+const BarChartComponent = ({ data }) => {
+  if (!data || !data.length) {
+    return <p className="text-gray-500">No data available.</p>;
   }
 
   return (
@@ -42,15 +22,17 @@ const BarChartComponent = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Monthly Urban Issues Detected</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+        Anomaly Detection Summary
+      </h2>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
+          <XAxis dataKey="date" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Bar dataKey="issues_detected" fill="#3b82f6" />
+          <Bar dataKey="count" fill="#3b82f6" />
         </BarChart>
       </ResponsiveContainer>
     </motion.div>

@@ -1,46 +1,37 @@
-from flask import Blueprint, jsonify, request
-from sqlalchemy import text
-from mysql_db import db
-from mysql_models import Anomaly
 
-graphs_bp = Blueprint('graphs', __name__)
+# routes/graphs_api.py
 
-# ===== API: Summary counts for PieChart =====
-@graphs_bp.route('/api/graphs/summary', methods=['GET'])
-def get_anomaly_summary():
+from flask import Blueprint, request, jsonify
+from sqlalchemy import func
+from mysql_models import db, DetectionMetadata, DetectionImage, DetectionEvent
+
+graphs_bp = Blueprint("graphs", __name__)
+
+@graphs_bp.route("/api/chart-data", methods=["GET"])
+def get_chart_data():
     """
-    Get the total counts of each anomaly type: graffiti, road_damage, encampment.
+    API endpoint to retrieve anomaly count by date for a given type.
+    Query Params:
+        - type: one of ['graffiti', 'tent', 'road damage']
     """
+    anomaly_type = request.args.get("type")
+
+    if not anomaly_type:
+        return jsonify({"error": "Missing 'type' query parameter."}), 400
+
     try:
-        graffiti_count = Anomaly.query.filter_by(type='graffiti').count()
-        road_damage_count = Anomaly.query.filter_by(type='road_damage').count()
-        encampment_count = Anomaly.query.filter_by(type='encampment').count()
+        results = db.session.query(
+            func.date(DetectionEvent.timestamp).label("date"),
+            func.count().label("count")
+        ).join(DetectionImage, DetectionImage.id == DetectionMetadata.image_id) \
+         .join(DetectionEvent, DetectionEvent.id == DetectionImage.event_id) \
+         .filter(DetectionMetadata.type == anomaly_type) \
+         .group_by(func.date(DetectionEvent.timestamp)) \
+         .order_by(func.date(DetectionEvent.timestamp)) \
+         .all()
 
-        return jsonify({
-            'graffiti': graffiti_count,
-            'road_damage': road_damage_count,
-            'encampment': encampment_count
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# ===== API: Monthly trend for BarChart and LineChart =====
-@graphs_bp.route('/api/graphs/trends', methods=['GET'])
-def get_anomaly_trends():
-    """
-    Get monthly issue counts for bar/line charts.
-    """
-    try:
-        results = db.session.execute(text("""
-            SELECT DATE_FORMAT(timestamp, '%M') AS month, COUNT(*) AS issues_detected
-            FROM anomalies
-            GROUP BY month
-            ORDER BY MIN(timestamp)
-        """))
-
-        data = [{'month': row[0], 'issues_detected': row[1]} for row in results]
-
+        data = [{"date": row.date.strftime("%Y-%m-%d"), "count": row.count} for row in results]
         return jsonify(data), 200
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
