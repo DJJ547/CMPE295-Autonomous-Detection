@@ -1,14 +1,16 @@
 # This eventlet import must stay at the top
 import eventlet
 eventlet.monkey_patch()
-
-
 print("Eventlet monkey patching done.")
+
 from flask import Flask
 from flask_cors import CORS
 import os
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+# Load environment variables
+load_dotenv()
+from config import Config  # 👈 use centralized config
 
 import boto3
 import tempfile
@@ -32,9 +34,7 @@ from extensions import db, socketio, cors
 from routes.llm import llm_bp
 from routes.google_map_api import googlemap_bp
 
-# Load environment variables
-load_dotenv()
-from config import Config  # 👈 use centralized config
+
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)  # 👈 central config loading
