@@ -11,6 +11,7 @@
     "@vis.gl/react-google-maps": "^1.5.2",
     "axios": "^1.8.4",
     "cra-template": "1.2.0",
+    "framer-motion": "^12.9.2",
     "frontend": "file:",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -20,8 +21,7 @@
     "semantic-ui-css": "^2.5.0",
     "semantic-ui-react": "^2.1.5",
     "socket.io-client": "^4.8.1",
-    "web-vitals": "^4.2.4",
-    "framer-motion": "^12.9.2"
+    "web-vitals": "^4.2.4"
   },
   "scripts": {
     "start": "react-scripts start",

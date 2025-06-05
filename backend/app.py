@@ -1,7 +1,7 @@
-# This eventlet import must stay at the top
-import eventlet
-eventlet.monkey_patch()
-print("Eventlet monkey patching done.")
+# This gevent import must stay at the top
+from gevent import monkey
+monkey.patch_all()
+print("Gevent monkey patching done.")
 
 from flask import Flask
 from flask_cors import CORS
@@ -72,9 +72,6 @@ def index():
 # Run the app
 if __name__ == '__main__':
     print("🚀 Starting backend on http://localhost:8000")
-app.register_blueprint(googlemap_bp)
-app.register_blueprint(llm_bp)
-app.register_blueprint(heatmap_bp)  # Register the heatmap blueprint
 
 # Register SocketIO events
 import routes.stream_socket

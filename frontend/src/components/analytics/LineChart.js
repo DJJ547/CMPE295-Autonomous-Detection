@@ -1,76 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React from "react";
 import {
-  PieChart,
-  Pie,
-  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
+  ResponsiveContainer,
   Legend,
-  ResponsiveContainer
-} from 'recharts';
-import { motion } from 'framer-motion';
-import LoadingSpinner from '../common/loadspinner';
+} from "recharts";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
-
-const PieChartComponent = () => {
-  const [pieData, setPieData] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch('http://localhost:8000/api/graphs/trends')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch pie chart data');
-        }
-        return response.json();
-      })
-      .then(data => {
-        const formatted = [
-          { name: 'Graffiti', value: data.graffiti },
-          { name: 'Road Damage', value: data.road_damage },
-          { name: 'Encampment', value: data.encampment }
-        ];
-        setPieData(formatted);
-      })
-      .catch(error => setError(error.message));
-  }, []);
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
-
-  if (!pieData.length) {
-    return <LoadingSpinner />;
+const LineChartComponent = ({ data }) => {
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <p style={{ textAlign: "center", color: "#6b7280" }}>
+        No data available.
+      </p>
+    );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Anomaly Type Distribution</h2>
-      <ResponsiveContainer width="100%" height={250}>
-        <PieChart>
-          <Pie
-            data={pieData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={80}
-            label
-          >
-            {pieData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
+    <div style={{ width: "100%", height: "400px" }}>
+      <ResponsiveContainer>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
           <Tooltip />
           <Legend />
-        </PieChart>
+          <Line type="monotone" dataKey="count" stroke="#82ca9d" />
+        </LineChart>
       </ResponsiveContainer>
-    </motion.div>
+    </div>
   );
 };
 
-export default PieChartComponent;
+export default LineChartComponent;

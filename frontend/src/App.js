@@ -16,7 +16,7 @@ import GoogleMap from "./pages/googleMap";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import HeatmapPage from "./pages/HeatmapPage";
-import AnalyticsPage from './pages/AnalyticsPage';
+import AnalyticsPage from './pages/ChartSection';
 
 export default function App() {
   return (
