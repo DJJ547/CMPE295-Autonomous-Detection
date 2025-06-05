@@ -11,7 +11,6 @@ graphs_bp = Blueprint("graphs", __name__)
 
 @graphs_bp.route("/api/chart-data", methods=["GET"])
 def get_chart_data():
-    print("==================")
     """
     API endpoint to retrieve anomaly count by date for a given type.
     Query Params:
@@ -40,7 +39,6 @@ def get_chart_data():
             .group_by(func.date(Event.timestamp)) \
             .order_by(func.date(Event.timestamp)) \
             .all()
-        print(results)
 
         data = [{"date": row.date.strftime(
             "%Y-%m-%d"), "count": row.count} for row in results]
