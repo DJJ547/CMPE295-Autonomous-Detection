@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 import boto3
 import tempfile
+from extensions import db, socketio, cors
 
 # Import blueprints
 from routes.auth_api import auth_bp
@@ -22,11 +23,13 @@ from routes.heatmap_api import heatmap_bp  # Import the heatmap blueprint
 from extensions import db, socketio, cors
 from routes.llm import llm_bp
 from routes.google_map_api import googlemap_bp
-from dotenv import load_dotenv
-load_dotenv()
 
-# Initialize Flask & extensions
+# Load environment variables
+load_dotenv()
+from config import Config  # 👈 use centralized config
+# Initialize Flask app
 app = Flask(__name__)
+app.config.from_object(Config)  # 👈 central config loading
 
 # Config
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -40,7 +43,7 @@ db.init_app(app)
 socketio.init_app(app)
 cors.init_app(app)
 
-# Register blueprints directly
+# Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(home_bp)
 app.register_blueprint(test_bp)
@@ -48,12 +51,9 @@ app.register_blueprint(googlemap_bp)
 app.register_blueprint(llm_bp)
 app.register_blueprint(heatmap_bp)  # Register the heatmap blueprint
 
-# Import and register your socket events
-import routes.stream_socket  # <-- important: this registers @socketio.on handlers
+# Register SocketIO events
+import routes.stream_socket
 
 # Run the app
 if __name__ == '__main__':
-    # with app.app_context():
-    #     db.create_all()  # create tables if not exist
-    # app.run(debug=True, port=8000)
     socketio.run(app, host='0.0.0.0', port=8000)
