@@ -1,9 +1,7 @@
 import React from "react";
 import Heatmap from "../components/Heatmap";
 import ChatWindow from "../components/ChatWindow";
-import BarChart from "../components/analytics/BarChart";
-import PieChart from "../components/analytics/PieChart";
-import LineChart from "../components/analytics/LineChart";
+import ChartSection from "./ChartSection";
 
 const Analytics = () => {
   return (
@@ -59,15 +57,7 @@ const Analytics = () => {
 
           }}
         >
-          <div style={{ flex: 1 }}>
-            <BarChart />
-          </div>
-          <div style={{ flex: 1 }}>
-            <PieChart />
-          </div>
-          <div style={{ flex: 1 }}>
-            <LineChart />
-          </div>
+          <ChartSection />
         </div>
       </div>
     </div>

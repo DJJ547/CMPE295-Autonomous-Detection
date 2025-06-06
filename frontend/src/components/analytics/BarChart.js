@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -7,54 +7,53 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Legend
-} from 'recharts';
-import { motion } from 'framer-motion';
-import LoadingSpinner from '../common/loadspinner';
+  Legend,
+} from "recharts";
+import { motion } from "framer-motion";
 
-const BarChartComponent = () => {
-  const [chartData, setChartData] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/graphs/trends')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch bar chart data');
-        }
-        return response.json();
-      })
-      .then(data => setChartData(data))
-      .catch(error => setError(error.message));
-  }, []);
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
-
-  if (!chartData.length) {
-    return <LoadingSpinner />;
+const BarChartComponent = ({ data }) => {
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <p style={{ textAlign: "center", color: "#6b7280" }}>
+        No data available.
+      </p>
+    );
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Monthly Urban Issues Detected</h2>
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="issues_detected" fill="#3b82f6" />
-        </BarChart>
-      </ResponsiveContainer>
+      <h2
+        style={{
+          fontSize: "1.5rem",
+          fontWeight: "600",
+          marginBottom: "1rem",
+          color: "#374151",
+        }}
+      >
+        Anomaly Detection Summary
+      </h2>
+      <div style={{ width: "100%", height: "250px" }}>
+        <ResponsiveContainer>
+          <BarChart
+            data={data}
+            margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="count" fill="#3b82f6" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </motion.div>
   );
 };
 
 export default BarChartComponent;
+
