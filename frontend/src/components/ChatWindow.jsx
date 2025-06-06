@@ -19,7 +19,7 @@ const ChatWindow = () => {
     setMessages(newMessages);
     setLoading(true);
     try {
-      const response = await axios.post(`${process.env.REACT_APP_LOCALHOST}/api/llm-query`, {
+      const response = await axios.post(`${process.env.REACT_APP_LOCALHOST}/api/llm-summarize`, {
         user_id: 'user123',
         message: input,
       });

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Heatmap from "../components/Heatmap";
 import ChatWindow from "../components/ChatWindow";
 import BarChart from "../components/analytics/BarChart";
@@ -6,14 +6,17 @@ import PieChart from "../components/analytics/PieChart";
 import LineChart from "../components/analytics/LineChart";
 
 const Analytics = () => {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: "column", // ✅ fix: stack vertically
+        flexDirection: "column",
         width: "100%",
         height: "92vh",
         gap: "20px",
+        position: "relative", // so floating button positions properly
       }}
     >
       {/* Top: Heatmap section */}
@@ -28,7 +31,7 @@ const Analytics = () => {
       >
         <Heatmap />
       </div>
-
+    
       {/* Bottom: Charts section */}
       <div
         style={{
@@ -36,7 +39,7 @@ const Analytics = () => {
           overflow: "auto",
           display: "flex",
           gap: "1.5rem",
-        flexDirection: "row",
+          flexDirection: "row",
         }}
       >
       <div
@@ -55,10 +58,10 @@ const Analytics = () => {
             display: "flex",
             gap: "1.5rem",
             width: "100%",
-            height: "100%", // optional: to stretch height evenly
-
+            height: "100%",
           }}
         >
+        
           <div style={{ flex: 1 }}>
             <BarChart />
           </div>
@@ -70,6 +73,49 @@ const Analytics = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Chat Button */}
+      <button
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          right: "20px",
+          width: "60px",
+          height: "60px",
+          borderRadius: "50%",
+          backgroundColor: "#007bff",
+          color: "white",
+          border: "none",
+          fontSize: "24px",
+          cursor: "pointer",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+          zIndex: 1000,
+        }}
+        title="Open Chat"
+      >
+        💬
+      </button>
+
+      {/* Chat Window */}
+      {isChatOpen && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "80px",
+            right: "20px",
+            width: "350px",
+            height: "400px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            borderRadius: "10px",
+            overflow: "hidden",
+            zIndex: 999,
+            backgroundColor: "white",
+          }}
+        >
+          <ChatWindow />
+        </div>
+      )}
     </div>
   );
 };
