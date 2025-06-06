@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import Heatmap from "../components/Heatmap";
 import ChatWindow from "../components/ChatWindow";
-import BarChart from "../components/analytics/BarChart";
-import PieChart from "../components/analytics/PieChart";
-import LineChart from "../components/analytics/LineChart";
+import ChartSection from "./ChartSection";
 
 const Analytics = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
