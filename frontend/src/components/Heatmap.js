@@ -96,9 +96,21 @@ const HeatmapComponent = () => {
     setSelectedType(event.target.value);
   };
 
-  return (
-    <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
-      <div style={{ paddingBottom: '10px' }}>
+return (
+  <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
+    <div style={{ position: "relative", width: "100%", height: "92vh" }}>
+      {/* Dropdown overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: "10px",
+          left: "10px",
+          backgroundColor: "white",
+          padding: "8px",
+          borderRadius: "4px",
+          zIndex: 10,
+        }}
+      >
         <label htmlFor="detection-type-select">Select Detection Type: </label>
         <select id="detection-type-select" value={selectedType} onChange={handleTypeChange}>
           <option value="all">All</option>
@@ -107,18 +119,35 @@ const HeatmapComponent = () => {
           <option value="tent">Tent</option>
         </select>
       </div>
-      <div style={{ width: "100%", height: "500px" }}>
-        <Map
-          defaultCenter={center}
-          defaultZoom={13}
-          mapId=""
-          style={{ width: "100%", height: "100%" }}
-        >
-          <HeatmapLayer data={filteredHeatmapData} />
-        </Map>
-      </div>
-    </APIProvider>
-  );
+
+      {/* Map underneath */}
+      <Map
+              defaultCenter={center}
+              defaultZoom={14}
+              gestureHandling={"greedy"}
+              disableDefaultUI={true}
+              options={{
+                styles: [
+                  // Hide all POIs (restaurants, shops, etc.)
+                  {
+                    featureType: "poi",
+                    elementType: "all",
+                    stylers: [{ visibility: "off" }]
+                  },
+                  // Hide transit (bus, train, subway lines/stations)
+                  {
+                    featureType: "transit",
+                    elementType: "all",
+                    stylers: [{ visibility: "off" }]
+                  }
+                ]
+              }}
+            >
+        <HeatmapLayer data={filteredHeatmapData} />
+      </Map>
+    </div>
+  </APIProvider>
+);
 };
 
 export default HeatmapComponent;
