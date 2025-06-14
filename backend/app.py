@@ -67,15 +67,15 @@ import routes.stream_socket  # this defines your socketio.on events
 # Add default route to avoid "loading forever"
 @app.route("/")
 def index():
-    return "✅ Backend is running"
+    return "Backend is running"
 
 # Run the app
 if __name__ == '__main__':
-    print("🚀 Starting backend on http://localhost:8000")
+    print("Starting backend on http://localhost:8000")
 
 # Register SocketIO events
 import routes.stream_socket
 
 # Run the app
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=8000)
+    socketio.run(app, host='0.0.0.0', port=8000, debug=True)
