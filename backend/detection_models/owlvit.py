@@ -3,6 +3,7 @@ from PIL import Image
 from transformers import OwlViTProcessor, OwlViTForObjectDetection
 from typing import List
 from config import Config
+from detection_models import grounding_dino, owlvit, yolo  # Add yolo import
 
 # Load model and processor once globally
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
