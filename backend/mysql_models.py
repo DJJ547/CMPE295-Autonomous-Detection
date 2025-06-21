@@ -66,20 +66,32 @@ class DetectionMetadata(db.Model):
     score = db.Column(db.Float, nullable=False)
     type = db.Column(db.Enum(DetectionType), nullable=False)
     
-class TaskStatus(enum.Enum):
-    created = "created"
+# class TaskStatus(enum.Enum):
+#     created = "created"
+#     verified = "verified"
+#     assigned = "assigned"
+#     in_progress = "in_progress"
+#     completed = "completed"
+#     cancelled = "cancelled"
+    
+class VerificationStatus(enum.Enum):
+    unverified = "unverified"
     verified = "verified"
-    assigned = "assigned"
+    
+class ProgressStatus(enum.Enum):
+    created = "created"
     in_progress = "in_progress"
     completed = "completed"
-    cancelled = "cancelled"
+   
     
 class Task(db.Model):
     __tablename__ = 'tasks'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     metadata_id = db.Column(db.Integer, db.ForeignKey('detection_metadata.id'), nullable=False)
     worker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    status = db.Column(db.Enum(TaskStatus), nullable=False, default=TaskStatus.assigned)
+    # status = db.Column(db.Enum(TaskStatus), nullable=False, default=TaskStatus.assigned)
+    verification_status = db.Column(db.Enum(VerificationStatus), nullable=False, default=VerificationStatus.unverified)
+    progress_status = db.Column(db.Enum(ProgressStatus), nullable=False, default=ProgressStatus.created)
     notes = db.Column(db.String(500), nullable=True)
     scheduled_time = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))

@@ -24,6 +24,7 @@ from routes.graphs_api import graphs_bp
 from routes.heatmap_api import heatmap_bp
 from routes.google_map_api import googlemap_bp
 from routes.llm import llm_bp
+from routes.task_assign import task_assign_bp
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -60,6 +61,7 @@ app.register_blueprint(graphs_bp)
 app.register_blueprint(googlemap_bp)
 app.register_blueprint(llm_bp)
 app.register_blueprint(heatmap_bp)
+app.register_blueprint(task_assign_bp)
 
 # Register SocketIO events
 import routes.stream_socket  # this defines your socketio.on events
