@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
-from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, VerificationStatus, ProgressStatus
+from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, UserRole, VerificationStatus, ProgressStatus
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 task_assign_bp = Blueprint('task_assign', __name__)
@@ -42,7 +42,8 @@ def get_tasks():
     query = Task.query.options(
         joinedload(Task.metadatas)
             .joinedload(DetectionMetadata.image)
-            .joinedload(DetectionImage.event)
+            .joinedload(DetectionImage.event),
+        joinedload(Task.worker)
     )
     
     #filter option lists
@@ -102,6 +103,8 @@ def get_tasks():
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat() if task.updated_at else None,
             "worker_id": task.worker_id,
+            "worker_first_name": task.worker.first_name if task.worker else None,
+            "worker_last_name": task.worker.last_name if task.worker else None,
 
             # Image fields
             "image_id": image.id,
@@ -190,3 +193,91 @@ def modify_task(task_id):
     
     db.session.commit()
     return jsonify({"message": "Task updated successfully", "task_id": task.id})
+
+
+@task_assign_bp.route('/api/tasks/bulk', methods=['PUT'])
+def modify_multiple_tasks():
+    """
+    Bulk update multiple tasks.
+
+    JSON Body (list of task update objects):
+    [
+        {
+            "task_id": int,                       # Required
+            "verification_status": str,           # Optional
+            "progress_status": str,               # Optional
+            "worker_id": int                      # Optional
+        },
+        ...
+    ]
+
+    Returns:
+    - JSON with summary of successes and errors per task
+    - 400 if input is invalid
+    """
+    data = request.get_json()
+    if not data or not isinstance(data, list):
+        return jsonify({"error": "Input must be a list of task updates"}), 400
+
+    results = []
+
+    for item in data:
+        result = {"task_id": item.get("task_id")}
+        
+        task_id = item.get("task_id")
+        if not task_id:
+            result["error"] = "Missing task_id"
+            results.append(result)
+            continue
+
+        task = Task.query.get(task_id)
+        if not task:
+            result["error"] = f"Task with id {task_id} not found"
+            results.append(result)
+            continue
+
+        # Process verification_status
+        if "verification_status" in item:
+            try:
+                task.verification_status = VerificationStatus[item["verification_status"]]
+            except KeyError:
+                result["error"] = f"Invalid verification_status: {item['verification_status']}"
+                results.append(result)
+                continue
+
+        # Process progress_status
+        if "progress_status" in item:
+            try:
+                task.progress_status = ProgressStatus[item["progress_status"]]  # Fixed typo
+            except KeyError:
+                result["error"] = f"Invalid progress_status: {item['progress_status']}"
+                results.append(result)
+                continue
+
+        # Process worker_id
+        if "worker_id" in item:
+            worker = User.query.get(item["worker_id"])
+            if not worker:
+                result["error"] = f"Worker with id {item['worker_id']} not found"
+                results.append(result)
+                continue
+            task.worker_id = item["worker_id"]
+
+        result["message"] = "Task updated successfully"
+        results.append(result)
+
+    db.session.commit()
+    return jsonify(results), 200
+
+
+@task_assign_bp.route('/api/tasks/getWorkers', methods=['GET'])
+def get_workers():
+    workers = User.query.filter_by(role=UserRole.worker).all()
+    def serialize_user(user):
+        return {
+            'id': user.id,
+            'firstName': user.first_name,
+            'lastName': user.last_name,
+        }
+        
+    return jsonify([serialize_user(worker) for worker in workers])

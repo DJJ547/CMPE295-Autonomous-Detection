@@ -3,6 +3,11 @@ import enum
 from datetime import datetime, timezone
 from sqlalchemy import Numeric, UniqueConstraint
 
+class UserRole(enum.Enum):
+    admin = "admin"
+    worker = "worker"
+    guest = "guest"
+
 class User(db.Model):
     __tablename__ = 'users'  # must match actual table name in MySQL
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -10,6 +15,7 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
+    role = db.Column(db.Enum(UserRole), nullable=False)
     
 class DetectionEvent(db.Model):
     __tablename__ = 'detection_events'  # must match actual table name in MySQL
@@ -80,6 +86,7 @@ class VerificationStatus(enum.Enum):
     
 class ProgressStatus(enum.Enum):
     created = "created"
+    assigned = "assigned"
     in_progress = "in_progress"
     completed = "completed"
    
@@ -88,7 +95,7 @@ class Task(db.Model):
     __tablename__ = 'tasks'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     metadata_id = db.Column(db.Integer, db.ForeignKey('detection_metadata.id'), nullable=False)
-    worker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    worker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     # status = db.Column(db.Enum(TaskStatus), nullable=False, default=TaskStatus.assigned)
     verification_status = db.Column(db.Enum(VerificationStatus), nullable=False, default=VerificationStatus.unverified)
     progress_status = db.Column(db.Enum(ProgressStatus), nullable=False, default=ProgressStatus.created)
