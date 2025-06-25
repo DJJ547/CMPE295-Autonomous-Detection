@@ -2,6 +2,8 @@ from extensions import db
 import enum
 from datetime import datetime, timezone
 from sqlalchemy import Numeric, UniqueConstraint
+from sqlalchemy.sql import func
+
 
 class UserRole(enum.Enum):
     admin = "admin"
@@ -72,13 +74,7 @@ class DetectionMetadata(db.Model):
     score = db.Column(db.Float, nullable=False)
     type = db.Column(db.Enum(DetectionType), nullable=False)
     
-# class TaskStatus(enum.Enum):
-#     created = "created"
-#     verified = "verified"
-#     assigned = "assigned"
-#     in_progress = "in_progress"
-#     completed = "completed"
-#     cancelled = "cancelled"
+
     
 class VerificationStatus(enum.Enum):
     unverified = "unverified"
@@ -97,13 +93,12 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     metadata_id = db.Column(db.Integer, db.ForeignKey('detection_metadata.id'), nullable=False)
     worker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    # status = db.Column(db.Enum(TaskStatus), nullable=False, default=TaskStatus.assigned)
     verification_status = db.Column(db.Enum(VerificationStatus), nullable=False, default=VerificationStatus.unverified)
     progress_status = db.Column(db.Enum(ProgressStatus), nullable=False, default=ProgressStatus.created)
     notes = db.Column(db.String(500), nullable=True)
     scheduled_time = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=datetime.now(timezone.utc))
 
     # Relationships (optional)
     metadatas = db.relationship("DetectionMetadata", backref="tasks")

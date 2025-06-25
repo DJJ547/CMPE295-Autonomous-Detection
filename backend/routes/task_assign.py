@@ -122,14 +122,19 @@ def get_tasks():
             "zipcode": event.zipcode,
 
             # Metadata fields
-            "metadata_id": metadata.id,
-            "X1_loc": metadata.X1_loc,
-            "Y1_loc": metadata.Y1_loc,
-            "X2_loc": metadata.X2_loc,
-            "Y2_loc": metadata.Y2_loc,
             "label": metadata.label,
-            "score": metadata.score,
             "type": metadata.type.value,
+             
+            "metadata": {
+                "id": metadata.id,
+                "X1_loc": metadata.X1_loc,
+                "Y1_loc": metadata.Y1_loc,
+                "X2_loc": metadata.X2_loc,
+                "Y2_loc": metadata.Y2_loc,
+                "label": metadata.label,
+                "score": metadata.score,
+                "type": metadata.type.value
+            }
         }
             
     return jsonify({

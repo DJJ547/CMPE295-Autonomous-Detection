@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import axios from 'axios';
 import {
   Modal,
@@ -44,7 +44,7 @@ const sortOptions = [
   { key: "oldest", text: "Oldest", value: "oldest" },
 ];
 
-const statusTabs = ["all", "unverified", "verified", "assigned", "completed"];
+const statusTabs = ["all", "unverified", "verified", "assigned", "completed", "discarded"];
 
 
 const getColor = (status) => {
@@ -173,7 +173,7 @@ const TaskAssigningPage = () => {
 
   }
 
-    const handleDiscard = async (id = null) => {
+  const handleDiscard = async (id = null) => {
     if (selectedIds.length === 0 && id == null) {
       return
     }
@@ -198,7 +198,7 @@ const TaskAssigningPage = () => {
   const getFilteredTasks = () => {
     let filtered = tasks.filter((task) => {
       const matchesStatus =
-        selectedTab === "all" || task.progress_status === selectedTab || task.verification_status === selectedTab;
+        (selectedTab === "all" && task.verification_status !== "discarded") || task.progress_status === selectedTab || task.verification_status === selectedTab;
       const matchesSearch =
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -216,73 +216,155 @@ const TaskAssigningPage = () => {
     return filtered;
   };
 
-  const TaskCard = ({ curTab, task, selected, onSelect }) => (
-    <Card fluid>
-      <Checkbox
-        checked={selected}
-        onChange={() => onSelect(task.id)}
-        style={{ position: "absolute", top: 10, left: 10, zIndex: 1 }}
-      />
 
-      <Image src={task.image} wrapped ui={false} />
-      <Card.Content>
-        <Card.Header>{task.title}</Card.Header>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <Card.Meta style={{ fontSize: "0.9em", color: "grey" }}>
-            Confidence: {task.confidence}%
-          </Card.Meta>
-          <span style={{ fontSize: "0.9em", color: "grey" }}>
-            {task.verification_status === 'verified' ? (
-              <>
-                <span style={{ color: "green", fontSize: "1.2em" }}>●</span> Verified
-              </>
-            ) : (
-              <>
-                <span style={{ color: "orange", fontSize: "1.2em" }}>●</span> Unverified
-              </>
-            )}
-          </span>
+
+
+  const TaskCard = ({ curTab, task, selected, onSelect }) => {
+    const [imgDims, setImgDims] = useState({ width: 1, height: 1 });
+    const imgRef = useRef(null);
+
+    // Resize observer to track image size on window resize
+    useEffect(() => {
+      if (!imgRef.current) return;
+
+      const observer = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+          const { width, height } = entry.contentRect;
+          setImgDims({ width, height });
+        }
+      });
+
+      observer.observe(imgRef.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }, []);
+
+    // Function to render bounding boxes
+    const renderBoundingBoxes = (meta) => {
+      const scaleX = imgDims.width / 640;
+      const scaleY = imgDims.height / 640;
+
+      const x1 = meta.X1_loc * scaleX;
+      const y1 = meta.Y1_loc * scaleY;
+      const x2 = meta.X2_loc * scaleX;
+      const y2 = meta.Y2_loc * scaleY;
+
+      const width = x2 - x1;
+      const height = y2 - y1;
+
+      return (
+        <div
+          key={meta.id}
+          style={{
+            position: "absolute",
+            left: x1,
+            top: y1,
+            width,
+            height,
+            border: "2px solid red",
+            backgroundColor: "rgba(255, 0, 0, 0.2)",
+            zIndex: 5,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "-14px",
+              left: "0px",
+              color: "red",
+              fontSize: "10px",
+              fontWeight: 500,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {meta.label} ({meta.score.toFixed(3)})
+          </div>
         </div>
-        <Card.Description>
-          <p>
-            <strong>Location:</strong> {task.location}
-          </p>
-          <p>
-            <strong>Progress Status:</strong>{" "}
-            <Label color={getColor(task.progress_status)}>{task.progress_status}</Label>
-          </p>
+      );
+    };
 
-          {task.assignedTo && (
+    return (
+      <Card fluid>
+        <Checkbox
+          checked={selected}
+          onChange={() => onSelect(task.id)}
+          style={{ position: "absolute", top: 10, left: 10, zIndex: 1 }}
+        />
+        <div style={{ position: "relative", width: "100%" }}>
+          <img
+            ref={imgRef}
+            src={task.image}
+            alt={task.image.direction}
+
+            style={{ width: "100%", height: "auto", objectFit: "contain", display: "block" }}
+          />
+          {renderBoundingBoxes(task.metadata)}
+        </div>
+        <Card.Content>
+          <Card.Header>{task.title}</Card.Header>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+            <Card.Meta style={{ fontSize: "0.9em", color: "grey" }}>
+              Confidence: {task.confidence}%
+            </Card.Meta>
+            <span style={{ fontSize: "0.9em", color: "grey" }}>
+              {task.verification_status === 'verified' ? (
+                <>
+                  <span style={{ color: "green", fontSize: "1.2em" }}>●</span> Verified
+                </>
+              ) : task.verification_status === 'discarded' ? (
+                <>
+                  <span style={{ color: "red", fontSize: "1.2em" }}>●</span> Discarded
+                </>
+              ) : (
+                <>
+                  <span style={{ color: "orange", fontSize: "1.2em" }}>●</span> Unverified
+                </>
+              )}
+            </span>
+          </div>
+          <Card.Description>
             <p>
-              <strong>Assigned to:</strong> {task.assignedTo}
+              <strong>Location:</strong> {task.location}
             </p>
-          )}
-          {task.verifiedBy && (
             <p>
-              <strong>Verified by:</strong> {task.verifiedBy}
+              <strong>Progress Status:</strong>{" "}
+              <Label color={getColor(task.progress_status)}>{task.progress_status}</Label>
             </p>
-          )}
-          <p>
-            <strong>Timestamp:</strong> {task.timestamp}
-          </p>
-        </Card.Description>
-      </Card.Content>
-      <Card.Content extra>
-        {<Button basic color="red" onClick={() => handleDiscard(task.id)}>
-          🗑️ Discard
-        </Button>}
-        <Button basic color="blue" onClick={() => {
-          setSelectedIds([task.id])
-          setAssignModalOpen(true)
-        }}>
-          👤 Assign
-        </Button>
-        <Button basic color="green" onClick={() => handleDone(task.id)}>
-          ✅ Mark Done
-        </Button>
-      </Card.Content>
-    </Card>
-  );
+
+            {task.assignedTo && (
+              <p>
+                <strong>Assigned to:</strong> {task.assignedTo}
+              </p>
+            )}
+            {task.verifiedBy && (
+              <p>
+                <strong>Verified by:</strong> {task.verifiedBy}
+              </p>
+            )}
+            <p>
+              <strong>Timestamp:</strong> {task.timestamp}
+            </p>
+          </Card.Description>
+        </Card.Content>
+        <Card.Content extra>
+          {<Button basic color="red" onClick={() => handleDiscard(task.id)}>
+            🗑️ Discard
+          </Button>}
+          <Button basic color="blue" onClick={() => {
+            setSelectedIds([task.id])
+            setAssignModalOpen(true)
+          }}>
+            👤 Assign
+          </Button>
+          <Button basic color="green" onClick={() => handleDone(task.id)}>
+            ✅ Mark Done
+          </Button>
+        </Card.Content>
+      </Card>
+    );
+  }
 
   const panes = statusTabs.map((status) => ({
     menuItem: status.charAt(0).toUpperCase() + status.slice(1),

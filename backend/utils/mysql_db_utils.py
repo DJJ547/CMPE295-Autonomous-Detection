@@ -1,6 +1,6 @@
 from extensions import db
 from sqlalchemy.exc import SQLAlchemyError
-from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata, DetectionType
+from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata, DetectionType, Task, VerificationStatus, ProgressStatus
 from datetime import datetime, timezone
 from config import Config
 
@@ -70,6 +70,16 @@ def register_anomaly_to_db(latitude, longitude, address, direction, image_url, o
                 type=get_detected_type(res['label'])
             )
             db.session.add(new_metadata_entry)
+            db.session.commit()
+            
+            # ✅ Step 5: Create Task for the new metadata
+            new_task = Task(
+                metadata_id=new_metadata_entry.id,
+                verification_status=VerificationStatus.unverified,
+                progress_status=ProgressStatus.created,
+                created_at=datetime.now(timezone.utc)
+            )
+            db.session.add(new_task)
             db.session.commit()
 
     except SQLAlchemyError as e:
