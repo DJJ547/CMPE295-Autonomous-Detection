@@ -173,6 +173,22 @@ const TaskAssigningPage = () => {
 
   }
 
+    const handleDiscard = async (id = null) => {
+    if (selectedIds.length === 0 && id == null) {
+      return
+    }
+    const updateIds = id ? [id] : selectedIds;
+
+    const update = updateIds.map(id => ({
+      task_id: id,
+      verification_status: 'discarded'
+    }));
+    console.log(update)
+    await updateTasks(update)
+    fetchTasks()
+
+  }
+
   const handleSelect = (id = null) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
@@ -200,7 +216,7 @@ const TaskAssigningPage = () => {
     return filtered;
   };
 
-  const TaskCard = ({ task, selected, onSelect }) => (
+  const TaskCard = ({ curTab, task, selected, onSelect }) => (
     <Card fluid>
       <Checkbox
         checked={selected}
@@ -252,9 +268,13 @@ const TaskAssigningPage = () => {
         </Card.Description>
       </Card.Content>
       <Card.Content extra>
+        {<Button basic color="red" onClick={() => handleDiscard(task.id)}>
+          🗑️ Discard
+        </Button>}
         <Button basic color="blue" onClick={() => {
           setSelectedIds([task.id])
-          setAssignModalOpen(true)}}>
+          setAssignModalOpen(true)
+        }}>
           👤 Assign
         </Button>
         <Button basic color="green" onClick={() => handleDone(task.id)}>
@@ -376,6 +396,7 @@ const TaskAssigningPage = () => {
               {paginatedTasks.map(task => (
                 <TaskCard
                   key={task.id}
+                  curTab={status}
                   task={task}
                   selected={selectedIds.includes(task.id)}
                   onSelect={handleSelect}

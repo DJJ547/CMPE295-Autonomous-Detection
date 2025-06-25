@@ -83,6 +83,7 @@ class DetectionMetadata(db.Model):
 class VerificationStatus(enum.Enum):
     unverified = "unverified"
     verified = "verified"
+    discarded = "discarded"
     
 class ProgressStatus(enum.Enum):
     created = "created"
