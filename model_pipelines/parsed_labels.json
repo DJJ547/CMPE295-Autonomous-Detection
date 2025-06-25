@@ -1,0 +1,492 @@
+[
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "potholes"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "pothole"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "downed",
+        "object": "bollard"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "bollard"
+    ]
+  },
+  {
+    "preposition": "in",
+    "primary_objects": [
+      {
+        "adjective": "down",
+        "object": "power line"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "street"
+      },
+      {
+        "adjective": "",
+        "object": "bike lane"
+      },
+      {
+        "adjective": "",
+        "object": "side walk"
+      }
+    ],
+    "base_objects": [
+      "bike lane",
+      "power line",
+      "side walk",
+      "street"
+    ]
+  },
+  {
+    "preposition": "in",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "flooding"
+      },
+      {
+        "adjective": "",
+        "object": "sewage backup"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "bike lane"
+      }
+    ],
+    "base_objects": [
+      "bike lane",
+      "flooding",
+      "sewage backup"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "unclear",
+        "object": "bike lane painting"
+      },
+      {
+        "adjective": "faded",
+        "object": "bike lane painting"
+      },
+      {
+        "adjective": "unclear",
+        "object": "bike lane striping"
+      },
+      {
+        "adjective": "faded",
+        "object": "bike lane striping"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "bike lane painting",
+      "bike lane striping"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "broken",
+        "object": "street signs"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "street sign"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "broken",
+        "object": "traffic lights"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "traffic light"
+    ]
+  },
+  {
+    "preposition": "blocking",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicle"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "bike lane"
+      }
+    ],
+    "base_objects": [
+      "bike lane",
+      "vehicle"
+    ]
+  },
+  {
+    "preposition": "blocking",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicle"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "fire hydrant"
+      }
+    ],
+    "base_objects": [
+      "fire hydrant",
+      "vehicle"
+    ]
+  },
+  {
+    "preposition": "blocking",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicle"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "red curb"
+      }
+    ],
+    "base_objects": [
+      "red curb",
+      "vehicle"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "dumped vegetation"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "dumped vegetation"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "dumped trash"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "dumped trash"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "glass"
+      },
+      {
+        "adjective": "",
+        "object": "debris"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "debris",
+      "glass"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "yard waste piles"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "yard waste pile"
+    ]
+  },
+  {
+    "preposition": "in",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "residential trash cans"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "bike lane"
+      }
+    ],
+    "base_objects": [
+      "bike lane",
+      "residential trash can"
+    ]
+  },
+  {
+    "preposition": "in",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "commercial dumpsters"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "bike lane"
+      }
+    ],
+    "base_objects": [
+      "bike lane",
+      "commercial dumpster"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "graffiti"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "graffiti"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "construction signs"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "construction sign"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "orange construction cones"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "orange construction cone"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "blocked",
+        "object": "roads"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "road"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "outage",
+        "object": "streetlight"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "streetlight"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "tree overhang"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "tree overhang"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "burned",
+        "object": "vehicles"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "vehicle"
+    ]
+  },
+  {
+    "preposition": "on",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicles"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "jacks"
+      },
+      {
+        "adjective": "",
+        "object": "blocks"
+      }
+    ],
+    "base_objects": [
+      "block",
+      "jack",
+      "vehicle"
+    ]
+  },
+  {
+    "preposition": "with",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicles"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "missing",
+        "object": "windows"
+      },
+      {
+        "adjective": "shattered",
+        "object": "windows"
+      }
+    ],
+    "base_objects": [
+      "vehicle",
+      "window"
+    ]
+  },
+  {
+    "preposition": "with",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicles"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "missing",
+        "object": "tires"
+      },
+      {
+        "adjective": "missing",
+        "object": "wheels"
+      }
+    ],
+    "base_objects": [
+      "tire",
+      "vehicle",
+      "wheel"
+    ]
+  },
+  {
+    "preposition": "in",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "mobile retailers"
+      }
+    ],
+    "secondary_objects": [
+      {
+        "adjective": "",
+        "object": "bike lanes"
+      }
+    ],
+    "base_objects": [
+      "bike lane",
+      "mobile retailer"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "person"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "person"
+    ]
+  },
+  {
+    "preposition": "",
+    "primary_objects": [
+      {
+        "adjective": "",
+        "object": "vehicle"
+      }
+    ],
+    "secondary_objects": [],
+    "base_objects": [
+      "vehicle"
+    ]
+  }
+]

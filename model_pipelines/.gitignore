@@ -1,0 +1,69 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+*.venv
+*.env
+
+# Local environment variables
+.env
+*.env.local
+*.flaskenv
+
+# Flask instance folder
+instance/
+
+# Logs and database files
+logs/
+*.log
+*.sqlite3
+db.sqlite3
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Compiled C extensions
+*.so
+
+# macOS files
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Pip dependency files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Mypy
+.mypy_cache/
+
+# Pytest cache
+.pytest_cache/
+
+# Sphinx documentation
+docs/_build/
+
+# Flask static files
+staticfiles/
+static/
+stream_temp/
+detected_temp/
+
+# Celery beat schedule file
+celerybeat-schedule
+
+# Ignore temporary files
+*.swp
+*.swo

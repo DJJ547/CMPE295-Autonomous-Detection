@@ -35,7 +35,7 @@ const InteractiveMap = ({ carLat, carLng, markers }) => {
         defaultCenter={position}
         defaultZoom={14}
         gestureHandling={"greedy"}
-        disableDefaultUI={true}
+        disableDefaultUI={false}
         options={{
           styles: [
             // Hide all POIs (restaurants, shops, etc.)
