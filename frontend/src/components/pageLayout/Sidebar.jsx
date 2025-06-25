@@ -39,8 +39,16 @@ export default function Sidebar() {
           <Icon name="chart bar" size="large" />
           <AnimatedButton>Analytics</AnimatedButton>
         </Menu.Item>
+
+        <Menu.Item
+          active={selectedPath === "/tasks"}
+          onClick={handleClick("/tasks")}
+          style={{ marginBottom: "2.5rem" }}
+        >
+          <Icon name="tasks" size="large" />
+          <AnimatedButton>Tasks</AnimatedButton>
+        </Menu.Item>
       </Menu>
     </Card>
   );
 }
-

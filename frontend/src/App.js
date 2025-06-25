@@ -17,6 +17,7 @@ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import HeatmapPage from "./pages/HeatmapPage";
 import AnalyticsPage from './pages/ChartSection';
+import TaskAssigningPage from "./pages/TaskAssigningPage";
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/googleMap" element={<GoogleMap />} />
         <Route path="/heatmap" element={<HeatmapPage />} />
         <Route path="/analyticsPage" element={<AnalyticsPage />} />
+        <Route path="/tasks" element={<ProtectedRoute><PageLayout><TaskAssigningPage></TaskAssigningPage></PageLayout></ProtectedRoute>} />
       </Routes>
     </div>
   );

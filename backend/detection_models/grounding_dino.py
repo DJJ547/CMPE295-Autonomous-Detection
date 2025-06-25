@@ -4,8 +4,7 @@ import numpy as np
 from typing import List
 from transformers import (
     AutoProcessor, AutoModelForZeroShotObjectDetection,
-    BlipProcessor, BlipForConditionalGeneration,
-    CLIPProcessor, CLIPModel
+    BlipProcessor, BlipForConditionalGeneration
 )
 from config import Config
 
