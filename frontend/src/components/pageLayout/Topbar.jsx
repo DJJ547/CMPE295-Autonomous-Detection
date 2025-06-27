@@ -1,10 +1,16 @@
+import React from "react";
 import { Dropdown } from "semantic-ui-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/auth";
 
 export default function Topbar() {
-  function logout() {
-    localStorage.clear();
-    window.location.href = "/login";
-  }
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div
@@ -41,7 +47,7 @@ export default function Topbar() {
           trigger={
             <img
               src="/static/images/notification-icon.png"
-              alt="Profile Icon"
+              alt="Notification Icon"
               style={{
                 width: "32px",
                 height: "32px",
@@ -58,15 +64,9 @@ export default function Topbar() {
               transform: "translateX(0%)",
             }}
           >
-            <Dropdown.Item
-              text="Road damage detected!"
-              description="5 mins ago"
-            />
+            <Dropdown.Item text="Road damage detected!" description="5 mins ago" />
             <Dropdown.Item text="Tent detected!" description="8 mins ago" />
-            <Dropdown.Item
-              text="Graffiti detected!"
-              description="30 mins ago"
-            />
+            <Dropdown.Item text="Graffiti detected!" description="30 mins ago" />
             <Dropdown.Divider />
             <Dropdown.Item text="View More" icon="arrow right" />
           </Dropdown.Menu>
@@ -97,7 +97,7 @@ export default function Topbar() {
           >
             <Dropdown.Item disabled text="Asummers@gmail.com" />
             <Dropdown.Divider />
-            <Dropdown.Item text="Logout" onClick={logout} />
+            <Dropdown.Item text="Logout" onClick={handleLogout} />
           </Dropdown.Menu>
         </Dropdown>
       </div>

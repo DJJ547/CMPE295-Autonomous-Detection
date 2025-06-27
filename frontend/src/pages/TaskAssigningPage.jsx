@@ -264,13 +264,12 @@ export default function TaskAssigningPage() {
 
     return (
       <Card fluid>
-        {isStaff && (
-          <Checkbox
-            checked={selected}
-            onChange={() => handleSelect(task.id)}
-            style={{ position: "absolute", top: 10, left: 10, zIndex: 10 }}
-          />
-        )}
+        <Checkbox
+          checked={selected}
+          onChange={() => handleSelect(task.id)}
+          style={{ position: "absolute", top: 10, left: 10, zIndex: 10 }}
+        />
+
         <div style={{ position: "relative", width: "100%" }}>
           <img
             ref={imgRef}
