@@ -1,13 +1,23 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, Menu, Icon } from "semantic-ui-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import AnimatedButton from "./Animatedbutton";
+import { useAuth } from "../../contexts/auth";
 
 export default function Sidebar() {
-  const [selectedPath, setSelectedPath] = useState(window.location.pathname);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
-  const handleClick = (path) => () => {
-    window.location.href = path;
-    setSelectedPath(path);
+  if (!user) return null;
+
+  const go = (path) => () => navigate(path);
+
+  const isActive = (path, prefix = false) => {
+    if (prefix) {
+      return location.pathname === path || location.pathname.startsWith(path + "/");
+    }
+    return location.pathname === path;
   };
 
   return (
@@ -23,8 +33,8 @@ export default function Sidebar() {
     >
       <Menu vertical fluid secondary>
         <Menu.Item
-          active={selectedPath === "/"}
-          onClick={handleClick("/")}
+          active={isActive("/")}
+          onClick={go(`/${user.id}`)}
           style={{ marginBottom: "2.5rem" }}
         >
           <Icon name="dashboard" size="large" />
@@ -32,8 +42,8 @@ export default function Sidebar() {
         </Menu.Item>
 
         <Menu.Item
-          active={selectedPath === "/analytics"}
-          onClick={handleClick("/analytics")}
+          active={isActive("/analytics")}
+          onClick={go(`/analytics/${user.id}`)}
           style={{ marginBottom: "2.5rem" }}
         >
           <Icon name="chart bar" size="large" />
@@ -41,8 +51,8 @@ export default function Sidebar() {
         </Menu.Item>
 
         <Menu.Item
-          active={selectedPath === "/tasks"}
-          onClick={handleClick("/tasks")}
+          active={isActive("/tasks", true)}
+          onClick={go(`/tasks/${user.id}`)}
           style={{ marginBottom: "2.5rem" }}
         >
           <Icon name="tasks" size="large" />

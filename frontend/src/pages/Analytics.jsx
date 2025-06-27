@@ -2,8 +2,15 @@ import React from "react";
 import Heatmap from "../components/Heatmap";
 import ChatWindow from "../components/ChatWindow";
 import ChartSection from "./ChartSection";
+import { useParams } from "react-router-dom";
 
 const Analytics = () => {
+  const { userId: paramUserId } = useParams();
+  const storedRole = localStorage.getItem("role");
+  const storedId = parseInt(localStorage.getItem("user_id"), 10);
+  const userId = paramUserId ? parseInt(paramUserId, 10) : storedId;
+  const isStaff = storedRole === "admin";
+
   return (
     <div
       style={{
@@ -65,6 +72,5 @@ const Analytics = () => {
     </div>
   );
 };
-
 
 export default Analytics;

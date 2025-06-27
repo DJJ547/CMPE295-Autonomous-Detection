@@ -1,16 +1,21 @@
+import os
 import torch
 from PIL import Image
 from transformers import OwlViTProcessor, OwlViTForObjectDetection
 from typing import List
 from config import Config
 
-# Load model and processor once globally
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_id = "google/owlvit-base-patch32"
-processor = OwlViTProcessor.from_pretrained(model_id)
-model = OwlViTForObjectDetection.from_pretrained(model_id).to(device)
-print("Finished loading OWL-ViT")
+# ==== Global placeholders ====
+processor = None
+model = None
 
+# ===== Load Models Once =====
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_id = "google/owlvit-base-patch32"
+    processor = OwlViTProcessor.from_pretrained(model_id, use_fast=True)
+    model = OwlViTForObjectDetection.from_pretrained(model_id).to(device)
+    print("Models loaded: OWL-ViT, BLIP, STSB-RoBERTa")
 
 def detect_objects(
     image_path: str,

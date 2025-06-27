@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+
+import { useAuth } from "../contexts/auth";
+
 import LiveStreamWindow from "../components/LiveStreamWindow";
 import InteractiveMap from "../components/interactiveMap";
 import CoordinateSelectMap from "../components/CoordinateSelectMap";
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const isStaff = user?.role === "admin";
+
   const [carLat, setCarLat] = useState(null);
   const [carLng, setCarLng] = useState(null);
 
@@ -49,12 +56,18 @@ const Dashboard = () => {
           overflow: "hidden",
         }}
       >
-        {!coordSelect && <InteractiveMap carLat={carLat} carLng={carLng} markers={markers} />}
-        {coordSelect && <CoordinateSelectMap/>}
+        {!coordSelect && (
+          <InteractiveMap carLat={carLat} carLng={carLng} markers={markers} />
+        )}
+        {coordSelect && <CoordinateSelectMap />}
       </div>
 
       <div style={{ width: "30%" }}>
-        <LiveStreamWindow setCarLat={setCarLat} setCarLng={setCarLng} setCoordSelect = {setCoordSelect}/>
+        <LiveStreamWindow
+          setCarLat={setCarLat}
+          setCarLng={setCarLng}
+          setCoordSelect={setCoordSelect}
+        />
       </div>
     </div>
   );

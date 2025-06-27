@@ -1,3 +1,4 @@
+import os
 import torch
 from PIL import Image
 import numpy as np
@@ -19,20 +20,28 @@ else:
 import torch.nn.functional as F
 from sentence_transformers import CrossEncoder
 
-# ========== Load Models ==========
-# Grounding DINO
-dino_model_id = "IDEA-Research/grounding-dino-base"
-dino_processor = AutoProcessor.from_pretrained(dino_model_id)
-dino_model = AutoModelForZeroShotObjectDetection.from_pretrained(dino_model_id).to(device)
+# ==== Define global references ====
+dino_processor = None
+dino_model = None
+blip_processor = None
+blip_model = None
+cross_encoder = None
 
-# BLIP
-blip_model_id = "Salesforce/blip-image-captioning-base"
-blip_processor = BlipProcessor.from_pretrained(blip_model_id)
-blip_model = BlipForConditionalGeneration.from_pretrained(blip_model_id).to(device)
+# ========== Load Models Once ==========
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    # Grounding DINO
+    dino_model_id = "IDEA-Research/grounding-dino-base"
+    dino_processor = AutoProcessor.from_pretrained(dino_model_id, use_fast=True)
+    dino_model = AutoModelForZeroShotObjectDetection.from_pretrained(dino_model_id).to(device)
 
-print("Models loaded: DINO, BLIP, STSB-RoBERTa")
+    # BLIP
+    blip_model_id = "Salesforce/blip-image-captioning-base"
+    blip_processor = BlipProcessor.from_pretrained(blip_model_id)
+    blip_model = BlipForConditionalGeneration.from_pretrained(blip_model_id).to(device)
 
-cross_encoder = CrossEncoder('cross-encoder/stsb-roberta-base')
+    cross_encoder = CrossEncoder('cross-encoder/stsb-roberta-base')
+    
+    print("Models loaded: DINO, BLIP, STSB-RoBERTa")
 
 def check_alignment(label: str, caption: str, threshold=0.4):
     score = cross_encoder.predict([(label, caption)])[0]

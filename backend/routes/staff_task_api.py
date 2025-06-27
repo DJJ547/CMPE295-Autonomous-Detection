@@ -3,10 +3,10 @@ from extensions import db
 from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, UserRole, VerificationStatus, ProgressStatus
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
-task_assign_bp = Blueprint('task_assign', __name__)
+staff_task_bp = Blueprint('staff_task', __name__)
 
 
-@task_assign_bp.route('/api/tasks', methods=['GET'])
+@staff_task_bp.route('/api/tasks', methods=['GET'])
 def get_tasks():
     """
     Returns a paginated list of tasks with optional filters and sorting.
@@ -148,7 +148,7 @@ def get_tasks():
     })
 
 
-@task_assign_bp.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@staff_task_bp.route('/api/tasks/<int:task_id>', methods=['PUT'])
 def modify_task(task_id):
     """
     Updates fields of a specific task.
@@ -200,7 +200,7 @@ def modify_task(task_id):
     return jsonify({"message": "Task updated successfully", "task_id": task.id})
 
 
-@task_assign_bp.route('/api/tasks/bulk', methods=['PUT'])
+@staff_task_bp.route('/api/tasks/bulk', methods=['PUT'])
 def modify_multiple_tasks():
     """
     Bulk update multiple tasks.
@@ -275,7 +275,7 @@ def modify_multiple_tasks():
     return jsonify(results), 200
 
 
-@task_assign_bp.route('/api/tasks/getWorkers', methods=['GET'])
+@staff_task_bp.route('/api/tasks/getWorkers', methods=['GET'])
 def get_workers():
     workers = User.query.filter_by(role=UserRole.worker).all()
     def serialize_user(user):

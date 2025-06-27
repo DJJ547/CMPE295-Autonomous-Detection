@@ -1,51 +1,25 @@
-import React, { useRef, useEffect, useState } from "react";
-import axios from 'axios';
+import React, { useEffect, useState, useRef } from "react";
+import axios from "axios";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../contexts/auth";
 import {
   Modal,
   Tab,
   Card,
   Checkbox,
   Button,
-  Image,
   Label,
   Icon,
   Dropdown,
   Input,
   Pagination,
-  Dimmer, Loader
+  Loader,
 } from "semantic-ui-react";
 
-import sampleTasks from "./sample_tasks";
+// ✂️ Remove defaultProps warning on Tab.Pane
+delete Tab.Pane.defaultProps;
 
-const API_BASE_URL = 'http://localhost:8000/api/tasks';
-
-
-
-async function getTasks(params = {}) {
-  const response = await axios.get(API_BASE_URL, { params });
-  console.log(response.data)
-  return response.data;
-}
-
-async function getWorkers(params = {}) {
-  const response = await axios.get(API_BASE_URL + "/getWorkers", { params });
-  console.log(response.data)
-  return response.data;
-}
-
-
-async function updateTasks(taskUpdates) {
-  const response = await axios.put(`${API_BASE_URL}/bulk`, taskUpdates);
-  return response.data;
-}
-
-const sortOptions = [
-  { key: "recent", text: "Most Recent", value: "recent" },
-  { key: "oldest", text: "Oldest", value: "oldest" },
-];
-
-const statusTabs = ["all", "unverified", "verified", "assigned", "completed", "discarded"];
-
+const API_BASE = process.env.REACT_APP_LOCALHOST; // e.g. "http://127.0.0.1:8000/"
 
 const getColor = (status) => {
   switch (status) {
@@ -53,7 +27,7 @@ const getColor = (status) => {
       return "grey";
     case "assigned":
       return "blue";
-    case "in progress":
+    case "in_progress":
       return "yellow";
     case "completed":
       return "green";
@@ -62,42 +36,57 @@ const getColor = (status) => {
   }
 };
 
+export default function TaskAssigningPage() {
+  const { user } = useAuth();
+  const isStaff = user?.role === "admin";
 
-const TaskAssigningPage = () => {
+  const statusTabs = isStaff
+    ? ["all", "unverified", "verified", "assigned", "completed", "discarded"]
+    : ["assigned", "in_progress", "completed"];
+
   const [loading, setLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("all");
+  const [selectedTab, setSelectedTab] = useState(statusTabs[0]);
   const [tasks, setTasks] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("recent");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
-
-  //assign workers
   const [users, setUsers] = useState([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedWorkerId, setSelectedWorkerId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetchTasks();
+    if (isStaff) fetchWorkers();
+  }, [selectedTab, user]);
 
   async function fetchTasks() {
     setLoading(true);
     try {
-      const data = await getTasks();
-      const fetchedTasks = data.tasks.map(entry => ({
-        id: entry.task_id,
-        image: entry.image_url,
-        title: entry.label,
-        // confidence: 62,
-        progress_status: entry.progress_status,
-        verification_status: entry.verification_status,
-        assignedTo: entry.worker_first_name ?? "Unassigned",
-        verifiedBy: "",
-        location: entry.street,
-        timestamp: entry.created_at,
-        ...entry,
-      }));
-      setTasks(fetchedTasks)
-    } catch (error) {
-      console.error(error);
+      const url = isStaff
+        ? `${API_BASE}api/tasks`
+        : `${API_BASE}api/getAssignedTasks`;
+      const resp = await axios.get(url, { params: { user_id: user.id } });
+      const data = resp.data.tasks || resp.data;
+      setTasks(
+        data.map((e) => ({
+          id: e.task_id,
+          image: e.image_url,
+          metadata: Array.isArray(e.metadata) ? e.metadata : [],
+          title: e.label,
+          progress_status: e.progress_status,
+          verification_status: e.verification_status,
+          assignedTo: e.worker_name ?? "Unassigned",
+          location: e.street || "",
+          timestamp: e.created_at,
+          confidence: e.confidence,
+          ...e,
+        }))
+      );
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -105,154 +94,142 @@ const TaskAssigningPage = () => {
 
   async function fetchWorkers() {
     try {
-      const data = await getWorkers();
-      const formatedWorkers = data.map(user => ({
-        key: user.id,
-        value: user.id,
-        text: `${user.firstName} ${user.lastName}`
-      }));
-
-      setUsers(formatedWorkers)
-    } catch (error) {
-      console.error(error);
+      const resp = await axios.get(`${API_BASE}api/tasks/getWorkers`);
+      setUsers(
+        resp.data.map((u) => ({
+          key: u.id,
+          value: u.id,
+          text: `${u.firstName} ${u.lastName}`,
+        }))
+      );
+    } catch (err) {
+      console.error(err);
     }
   }
 
+  async function updateTasks(updates) {
+    await axios.put(`${API_BASE}api/tasks/bulk`, updates);
+  }
+  async function startTasks(ids) {
+    await axios.post(`${API_BASE}api/startTasks`, {
+      user_id: user.id,
+      task_ids: ids,
+    });
+  }
+  async function completeTasks(ids) {
+    await axios.post(`${API_BASE}api/completeTasks`, {
+      user_id: user.id,
+      task_ids: ids,
+    });
+  }
 
-  useEffect(() => {
-    fetchTasks();
-    fetchWorkers();
-  }, [])
+  // --- handlers ---
+  const handleSelect = (id) =>
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
 
   const handleVerify = async (id = null) => {
-    if (selectedIds.length === 0 && id == null) {
-      return
-    }
+    const ids = id ? [id] : selectedIds;
+    await updateTasks(
+      ids.map((i) => ({ task_id: i, verification_status: "verified" }))
+    );
+    fetchTasks();
+  };
 
-    const updateIds = id ? [id] : selectedIds;
-
-    const update = updateIds.map(id => ({
-      task_id: id,
-      verification_status: 'verified'
-    }));
-    console.log(update)
-    await updateTasks(update)
-    fetchTasks()
-
-  }
-
-  const handleAssign = async (id = null) => {
-    if (selectedIds.length === 0 && id == null) {
-      return
-    }
-    const updateIds = id ? [id] : selectedIds;
-
-    const update = updateIds.map(id => ({
-      task_id: id,
-      progress_status: 'assigned',
-      worker_id: selectedWorkerId
-    }));
-    console.log(update)
-    await updateTasks(update)
-    fetchTasks()
-  }
+  const handleStartSelected = async () => {
+    if (!selectedIds.length) return;
+    await startTasks(selectedIds);
+    fetchTasks();
+  };
 
   const handleDone = async (id = null) => {
-    if (selectedIds.length === 0 && id == null) {
-      return
+    const ids = id ? [id] : selectedIds;
+    if (isStaff) {
+      await updateTasks(
+        ids.map((i) => ({ task_id: i, progress_status: "completed" }))
+      );
+    } else {
+      await completeTasks(ids);
     }
-    const updateIds = id ? [id] : selectedIds;
-
-    const update = updateIds.map(id => ({
-      task_id: id,
-      progress_status: 'completed'
-    }));
-    console.log(update)
-    await updateTasks(update)
-    fetchTasks()
-
-  }
+    fetchTasks();
+  };
 
   const handleDiscard = async (id = null) => {
     if (selectedIds.length === 0 && id == null) {
-      return
+      return;
     }
     const updateIds = id ? [id] : selectedIds;
 
-    const update = updateIds.map(id => ({
+    const update = updateIds.map((id) => ({
       task_id: id,
-      verification_status: 'discarded'
+      verification_status: "discarded",
     }));
-    console.log(update)
-    await updateTasks(update)
-    fetchTasks()
 
-  }
+    await updateTasks(update);
+    fetchTasks();
+  };
 
-  const handleSelect = (id = null) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+  const handleAssign = async (id = null) => {
+    const ids = id ? [id] : selectedIds;
+    await updateTasks(
+      ids.map((i) => ({
+        task_id: i,
+        progress_status: "assigned",
+        worker_id: selectedWorkerId,
+      }))
     );
+    fetchTasks();
   };
 
-  const getFilteredTasks = () => {
-    let filtered = tasks.filter((task) => {
-      const matchesStatus =
-        (selectedTab === "all" && task.verification_status !== "discarded") || task.progress_status === selectedTab || task.verification_status === selectedTab;
-      const matchesSearch =
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.assignedTo &&
-          task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesStatus && matchesSearch;
-    });
-
-    if (sortOrder === "recent") {
-      filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    } else if (sortOrder === "oldest") {
-      filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    }
-
-    return filtered;
+  const markAsStarted = async (id) => {
+    await startTasks([id]);
+    fetchTasks();
   };
 
+  // --- filter + sort + search by title *and* location ---
+  const filteredTasks = () => {
+    const q = searchQuery.trim().toLowerCase();
+    return tasks
+      .filter((t) => {
+        const okStatus =
+          selectedTab === "all" ||
+          t.progress_status === selectedTab ||
+          t.verification_status === selectedTab;
+        const okSearch =
+          t.title.toLowerCase().includes(q) ||
+          t.location.toLowerCase().includes(q);
+        return okStatus && okSearch;
+      })
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  };
 
+  // --- individual card ---
+  const TaskCard = ({ task, selected }) => {
+    const imgRef = useRef();
+    const [dims, setDims] = useState({ width: 1, height: 1 });
 
-
-  const TaskCard = ({ curTab, task, selected, onSelect }) => {
-    const [imgDims, setImgDims] = useState({ width: 1, height: 1 });
-    const imgRef = useRef(null);
-
-    // Resize observer to track image size on window resize
     useEffect(() => {
       if (!imgRef.current) return;
-
-      const observer = new ResizeObserver((entries) => {
-        for (let entry of entries) {
-          const { width, height } = entry.contentRect;
-          setImgDims({ width, height });
+      const obs = new ResizeObserver((entries) => {
+        for (let e of entries) {
+          setDims({ width: e.contentRect.width, height: e.contentRect.height });
         }
       });
-
-      observer.observe(imgRef.current);
-
-      return () => {
-        observer.disconnect();
-      };
+      obs.observe(imgRef.current);
+      return () => obs.disconnect();
     }, []);
 
-    // Function to render bounding boxes
-    const renderBoundingBoxes = (meta) => {
-      const scaleX = imgDims.width / 640;
-      const scaleY = imgDims.height / 640;
+    const renderBox = () => {
+      const meta = task.metadata;
+      if (!meta) return null;
 
+      const scaleX = dims.width / 640;
+      const scaleY = dims.height / 640;
       const x1 = meta.X1_loc * scaleX;
       const y1 = meta.Y1_loc * scaleY;
       const x2 = meta.X2_loc * scaleX;
       const y2 = meta.Y2_loc * scaleY;
-
-      const width = x2 - x1;
-      const height = y2 - y1;
 
       return (
         <div
@@ -261,20 +238,20 @@ const TaskAssigningPage = () => {
             position: "absolute",
             left: x1,
             top: y1,
-            width,
-            height,
+            width: x2 - x1,
+            height: y2 - y1,
             border: "2px solid red",
-            backgroundColor: "rgba(255, 0, 0, 0.2)",
+            backgroundColor: "rgba(255,0,0,0.2)",
             zIndex: 5,
           }}
         >
           <div
             style={{
               position: "absolute",
-              top: "-14px",
-              left: "0px",
+              top: -14,
+              left: 0,
               color: "red",
-              fontSize: "10px",
+              fontSize: 10,
               fontWeight: 500,
               whiteSpace: "nowrap",
             }}
@@ -287,206 +264,252 @@ const TaskAssigningPage = () => {
 
     return (
       <Card fluid>
-        <Checkbox
-          checked={selected}
-          onChange={() => onSelect(task.id)}
-          style={{ position: "absolute", top: 10, left: 10, zIndex: 1 }}
-        />
+        {isStaff && (
+          <Checkbox
+            checked={selected}
+            onChange={() => handleSelect(task.id)}
+            style={{ position: "absolute", top: 10, left: 10, zIndex: 10 }}
+          />
+        )}
         <div style={{ position: "relative", width: "100%" }}>
           <img
             ref={imgRef}
             src={task.image}
-            alt={task.image.direction}
-
-            style={{ width: "100%", height: "auto", objectFit: "contain", display: "block" }}
+            alt=""
+            style={{ width: "100%", height: "auto", display: "block" }}
           />
-          {renderBoundingBoxes(task.metadata)}
+          {renderBox()}
         </div>
         <Card.Content>
           <Card.Header>{task.title}</Card.Header>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-            <Card.Meta style={{ fontSize: "0.9em", color: "grey" }}>
-              Confidence: {task.confidence}%
-            </Card.Meta>
-            <span style={{ fontSize: "0.9em", color: "grey" }}>
-              {task.verification_status === 'verified' ? (
-                <>
-                  <span style={{ color: "green", fontSize: "1.2em" }}>●</span> Verified
-                </>
-              ) : task.verification_status === 'discarded' ? (
-                <>
-                  <span style={{ color: "red", fontSize: "1.2em" }}>●</span> Discarded
-                </>
-              ) : (
-                <>
-                  <span style={{ color: "orange", fontSize: "1.2em" }}>●</span> Unverified
-                </>
-              )}
-            </span>
-          </div>
+          <Card.Meta>{task.location}</Card.Meta>
           <Card.Description>
-            <p>
-              <strong>Location:</strong> {task.location}
-            </p>
-            <p>
-              <strong>Progress Status:</strong>{" "}
-              <Label color={getColor(task.progress_status)}>{task.progress_status}</Label>
-            </p>
-
-            {task.assignedTo && (
-              <p>
-                <strong>Assigned to:</strong> {task.assignedTo}
-              </p>
-            )}
-            {task.verifiedBy && (
-              <p>
-                <strong>Verified by:</strong> {task.verifiedBy}
-              </p>
-            )}
-            <p>
-              <strong>Timestamp:</strong> {task.timestamp}
-            </p>
+            <Label color={getColor(task.progress_status)}>
+              {task.progress_status}
+            </Label>
           </Card.Description>
         </Card.Content>
         <Card.Content extra>
-          {<Button basic color="red" onClick={() => handleDiscard(task.id)}>
-            🗑️ Discard
-          </Button>}
-          <Button basic color="blue" onClick={() => {
-            setSelectedIds([task.id])
-            setAssignModalOpen(true)
-          }}>
-            👤 Assign
-          </Button>
-          <Button basic color="green" onClick={() => handleDone(task.id)}>
-            ✅ Mark Done
-          </Button>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.5rem",
+              marginTop: "0.5rem",
+              justifyContent: "flex-start",
+            }}
+          >
+            {isStaff ? (
+              <>
+                <Button
+                  basic
+                  color="orange"
+                  onClick={() => handleVerify(task.id)}
+                  style={{
+                    width: "7rem",
+                    height: "2.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🖊 Verify
+                </Button>
+                <Button
+                  basic
+                  color="blue"
+                  onClick={() => {
+                    setSelectedIds([task.id]);
+                    setAssignModalOpen(true);
+                  }}
+                  style={{
+                    width: "7rem",
+                    height: "2.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  👤 Assign
+                </Button>
+                <Button
+                  basic
+                  color="green"
+                  onClick={() => handleDone(task.id)}
+                  style={{
+                    width: "7rem",
+                    height: "2.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ✅ Complete
+                </Button>
+                <Button
+                  basic
+                  color="red"
+                  onClick={() => handleDiscard(task.id)}
+                  style={{
+                    width: "7rem",
+                    height: "2.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  🗑 Discard
+                </Button>
+              </>
+            ) : (
+              <>
+                {task.progress_status === "assigned" && (
+                  <Button
+                    basic
+                    color="orange"
+                    onClick={() => markAsStarted(task.id)}
+                    style={{
+                      width: "7rem",
+                      height: "2.5rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ▶️ Start
+                  </Button>
+                )}
+                {task.progress_status === "in_progress" && (
+                  <Button
+                    basic
+                    color="green"
+                    onClick={() => handleDone(task.id)}
+                    style={{
+                      width: "7rem",
+                      height: "2.5rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ✅ Complete
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </Card.Content>
       </Card>
     );
-  }
+  };
 
-  const panes = statusTabs.map((status) => ({
-    menuItem: status.charAt(0).toUpperCase() + status.slice(1),
-    render: () => {
-      const filteredTasks = getFilteredTasks().filter((task) =>
-        status === "all" ? true : task.progress_status === selectedTab || task.verification_status === selectedTab
-      );
-      const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
-      const paginatedTasks = filteredTasks.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-      );
+  // --- build tab panes ---
+  const panes = statusTabs.map((status) => {
+    const list = filteredTasks().filter(
+      (t) =>
+        status === "all" ||
+        t.progress_status === status ||
+        t.verification_status === status
+    );
+    const totalPages = Math.ceil(list.length / itemsPerPage);
+    const slice = list.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
 
-      return (
+    return {
+      menuItem: status.charAt(0).toUpperCase() + status.slice(1),
+      render: () => (
         <Tab.Pane>
+          {/* Search by title OR location */}
           <Input
             icon={
               searchQuery
                 ? {
-                  name: "close",
-                  link: true,
-                  onClick: () => {
-                    setSearchQuery("");
-                    setCurrentPage(1);
-                  },
-                }
+                    name: "close",
+                    link: true,
+                    onClick: () => setSearchQuery(""),
+                  }
                 : "search"
             }
-            placeholder="Search by label, location, or assignee..."
+            placeholder="Search by title or location..."
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(_, { value }) => {
+              setSearchQuery(value);
               setCurrentPage(1);
             }}
             style={{ marginBottom: 20, width: "100%" }}
           />
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 20,
-              flexWrap: "wrap",
-              gap: "1rem",
-            }}
-          >
-            {/* Left side: sort + select all */}
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <Dropdown
-                selection
-                options={sortOptions}
-                placeholder="Sort by time"
-                value={sortOrder}
-                onChange={(e, { value }) => {
-                  setSortOrder(value);
-                  setCurrentPage(1);
-                }}
-                style={{ minWidth: 200 }}
-              />
-
-              <Checkbox
-                label="Select All Tasks"
-                checked={
-                  filteredTasks.length > 0 &&
-                  filteredTasks.every((task) => selectedIds.includes(task.id))
-                }
-                onChange={(e, { checked }) => {
-                  const allFilteredIds = filteredTasks.map((task) => task.id);
-                  setSelectedIds((prev) =>
-                    checked
-                      ? Array.from(new Set([...prev, ...allFilteredIds]))
-                      : prev.filter((id) => !allFilteredIds.includes(id))
-                  );
-                }}
-              />
-            </div>
-
-            {/* Right side: action buttons */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                flexWrap: "wrap",
-              }}
-            >
+          {/* Bulk actions for staff */}
+          {(isStaff ||
+            selectedTab === "in_progress" ||
+            selectedTab === "assigned") && (
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: 20 }}>
               <Label>
-                <strong>{selectedIds.length}</strong> tasks selected
+                <strong>{selectedIds.length}</strong> selected
               </Label>
-              <Button color="blue" disabled={selectedIds.length === 0} onClick={() => handleVerify()}>
-                🖊 Verify Selected
-              </Button>
-              <Button color="green" disabled={selectedIds.length === 0} onClick={() => setAssignModalOpen(true)}>
-                👤 Assign Selected
-              </Button>
-              <Button color="grey" disabled={selectedIds.length === 0} onClick={() => handleDone()}>
-                ✅ Mark as Done
+
+              {isStaff && (
+                <>
+                  <Button
+                    color="orange"
+                    disabled={!selectedIds.length}
+                    onClick={() => handleVerify()}
+                  >
+                    🖊 Verify Selected
+                  </Button>
+                  <Button
+                    color="blue"
+                    disabled={!selectedIds.length}
+                    onClick={() => setAssignModalOpen(true)}
+                  >
+                    👤 Assign Selected
+                  </Button>
+                </>
+              )}
+
+              {!isStaff && (
+                <Button
+                  color="yellow"
+                  disabled={!selectedIds.length}
+                  onClick={() => handleStartSelected()}
+                >
+                  ▶️ Start Selected
+                </Button>
+              )}
+              <Button
+                color="grey"
+                disabled={!selectedIds.length}
+                onClick={() => handleDone()}
+              >
+                ✅ Complete Selected
               </Button>
             </div>
-          </div>
+          )}
 
-          <div style={{ position: 'relative', minHeight: '300px' }}>
-            {loading && (
-              <Loader active inline="centered" size="large">
-                Loading Tasks...
-              </Loader>
-            )}
-
+          {/* Cards grid */}
+          {loading ? (
+            <Loader active inline="centered" size="large" />
+          ) : (
             <div className="ui three stackable cards">
-              {paginatedTasks.map(task => (
+              {slice.map((task) => (
                 <TaskCard
                   key={task.id}
-                  curTab={status}
                   task={task}
                   selected={selectedIds.includes(task.id)}
-                  onSelect={handleSelect}
                 />
               ))}
             </div>
-          </div>
+          )}
 
+          {/* Pagination */}
           {totalPages > 1 && (
             <div style={{ textAlign: "center", marginTop: 20 }}>
               <Pagination
@@ -497,26 +520,26 @@ const TaskAssigningPage = () => {
             </div>
           )}
         </Tab.Pane>
-      );
-    },
-  }));
+      ),
+    };
+  });
 
+  // --- Assign modal ---
   const AssignModal = (
     <Modal
       open={assignModalOpen}
       onClose={() => setAssignModalOpen(false)}
       size="small"
     >
-      <Modal.Header>Assign Tasks to a Worker</Modal.Header>
+      <Modal.Header>Assign Tasks</Modal.Header>
       <Modal.Content>
-        <p>Select a worker to assign the selected tasks:</p>
         <Dropdown
           placeholder="Select Worker"
           fluid
           selection
           options={users}
           value={selectedWorkerId}
-          onChange={(e, { value }) => setSelectedWorkerId(value)}
+          onChange={(_, { value }) => setSelectedWorkerId(value)}
         />
       </Modal.Content>
       <Modal.Actions>
@@ -545,14 +568,11 @@ const TaskAssigningPage = () => {
       <Tab
         panes={panes}
         onTabChange={(_, data) => {
-          const newStatus = statusTabs[data.activeIndex];
-          setSelectedTab(newStatus);
+          setSelectedTab(statusTabs[data.activeIndex]);
           setCurrentPage(1);
         }}
       />
-      {AssignModal}
+      {isStaff && AssignModal}
     </div>
   );
-};
-
-export default TaskAssigningPage;
+}

@@ -45,7 +45,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
 
-  const [selectedModel, setSelectedModel] = useState("GroundingDINO");
+  const [selectedModel, setSelectedModel] = useState("dino");
 
   const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
