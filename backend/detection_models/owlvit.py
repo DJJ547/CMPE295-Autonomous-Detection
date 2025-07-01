@@ -2,8 +2,12 @@ import torch
 from PIL import Image
 from transformers import OwlViTProcessor, OwlViTForObjectDetection
 from typing import List
+import sys
+import os
+
+# Add the parent directory to the Python path to import config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config
-from detection_models import grounding_dino, owlvit, yolo  # Add yolo import
 
 # Load model and processor once globally
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

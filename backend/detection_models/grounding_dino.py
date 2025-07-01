@@ -23,12 +23,12 @@ from sentence_transformers import CrossEncoder
 # ========== Load Models ==========
 # Grounding DINO
 dino_model_id = "IDEA-Research/grounding-dino-base"
-dino_processor = AutoProcessor.from_pretrained(dino_model_id)
+dino_processor = AutoProcessor.from_pretrained(dino_model_id, use_fast=True)
 dino_model = AutoModelForZeroShotObjectDetection.from_pretrained(dino_model_id).to(device)
 
 # BLIP
 blip_model_id = "Salesforce/blip-image-captioning-base"
-blip_processor = BlipProcessor.from_pretrained(blip_model_id)
+blip_processor = BlipProcessor.from_pretrained(blip_model_id, use_fast=True)
 blip_model = BlipForConditionalGeneration.from_pretrained(blip_model_id).to(device)
 
 print("Models loaded: DINO, BLIP, STSB-RoBERTa")

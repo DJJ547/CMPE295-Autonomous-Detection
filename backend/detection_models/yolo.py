@@ -2,9 +2,13 @@ from ultralytics import YOLO
 import torch
 from PIL import Image
 from typing import List
-from config import Config
+import sys
 import os
 from dotenv import load_dotenv
+
+# Add the parent directory to the Python path to import config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import Config
 
 # Load environment variables
 load_dotenv()
