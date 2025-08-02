@@ -1,37 +1,48 @@
 [
-  "bike lane",
-  "bike lane painting",
-  "bike lane striping",
-  "block",
-  "bollard",
-  "commercial dumpster",
-  "construction sign",
-  "debris",
-  "dumped trash",
-  "dumped vegetation",
-  "fire hydrant",
-  "flooding",
-  "glass",
-  "graffiti",
-  "jack",
-  "mobile retailer",
-  "orange construction cone",
-  "person",
-  "pothole",
-  "power line",
-  "red curb",
-  "residential trash can",
-  "road",
-  "sewage backup",
-  "side walk",
-  "street",
-  "street sign",
-  "streetlight",
-  "tire",
-  "traffic light",
-  "tree overhang",
-  "vehicle",
-  "wheel",
-  "window",
-  "yard waste pile"
+  [
+    "bike lane",
+    "bike lane painting",
+    "bike lane striping",
+    "road",
+    "side walk",
+    "street",
+    "red curb"
+  ],
+  [
+    "street sign",
+    "traffic light",
+    "streetlight",
+    "fire hydrant",
+    "power line",
+    "sewage backup",
+    "flooding"
+  ],
+  [
+    "car",
+    "car wheel",
+    "car window",
+    "jack",
+    "mobile retailer"
+  ],
+  [
+    "dumped trash",
+    "dumped vegetation",
+    "yard waste pile",
+    "commercial dumpster",
+    "residential trash can",
+    "debris"
+  ],
+  [
+    "orange construction cone",
+    "construction sign",
+    "bollard",
+    "block",
+    "person",
+    "tree overhang"
+  ],
+  [
+    "pothole",
+    "graffiti",
+    "shattered glass"
+  ]
 ]

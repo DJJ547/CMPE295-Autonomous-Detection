@@ -135,7 +135,7 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicle"
+        "object": "car"
       }
     ],
     "secondary_objects": [
@@ -146,7 +146,7 @@
     ],
     "base_objects": [
       "bike lane",
-      "vehicle"
+      "car"
     ]
   },
   {
@@ -154,7 +154,7 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicle"
+        "object": "car"
       }
     ],
     "secondary_objects": [
@@ -164,8 +164,8 @@
       }
     ],
     "base_objects": [
-      "fire hydrant",
-      "vehicle"
+      "car",
+      "fire hydrant"
     ]
   },
   {
@@ -173,7 +173,7 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicle"
+        "object": "car"
       }
     ],
     "secondary_objects": [
@@ -183,8 +183,8 @@
       }
     ],
     "base_objects": [
-      "red curb",
-      "vehicle"
+      "car",
+      "red curb"
     ]
   },
   {
@@ -218,7 +218,7 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "glass"
+        "object": "shattered glass"
       },
       {
         "adjective": "",
@@ -228,7 +228,7 @@
     "secondary_objects": [],
     "base_objects": [
       "debris",
-      "glass"
+      "shattered glass"
     ]
   },
   {
@@ -365,12 +365,12 @@
     "primary_objects": [
       {
         "adjective": "burned",
-        "object": "vehicles"
+        "object": "car"
       }
     ],
     "secondary_objects": [],
     "base_objects": [
-      "vehicle"
+      "car"
     ]
   },
   {
@@ -378,7 +378,7 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicles"
+        "object": "car"
       }
     ],
     "secondary_objects": [
@@ -393,8 +393,8 @@
     ],
     "base_objects": [
       "block",
-      "jack",
-      "vehicle"
+      "car",
+      "jack"
     ]
   },
   {
@@ -402,22 +402,22 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicles"
+        "object": "car"
       }
     ],
     "secondary_objects": [
       {
         "adjective": "missing",
-        "object": "windows"
+        "object": "car windows"
       },
       {
         "adjective": "shattered",
-        "object": "windows"
+        "object": "car windows"
       }
     ],
     "base_objects": [
-      "vehicle",
-      "window"
+      "car",
+      "car window"
     ]
   },
   {
@@ -425,23 +425,23 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicles"
+        "object": "car"
       }
     ],
     "secondary_objects": [
       {
         "adjective": "missing",
-        "object": "tires"
+        "object": "car tires"
       },
       {
         "adjective": "missing",
-        "object": "wheels"
+        "object": "car wheels"
       }
     ],
     "base_objects": [
-      "tire",
-      "vehicle",
-      "wheel"
+      "car",
+      "car tire",
+      "car wheel"
     ]
   },
   {
@@ -481,12 +481,12 @@
     "primary_objects": [
       {
         "adjective": "",
-        "object": "vehicle"
+        "object": "car"
       }
     ],
     "secondary_objects": [],
     "base_objects": [
-      "vehicle"
+      "car"
     ]
   }
 ]
