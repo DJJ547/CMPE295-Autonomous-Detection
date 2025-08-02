@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-
 import { useAuth } from "../contexts/auth";
 
 import LiveStreamWindow from "../components/LiveStreamWindow";
 import InteractiveMap from "../components/interactiveMap";
-import CoordinateSelectMap from "../components/CoordinateSelectMap";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -13,22 +10,23 @@ const Dashboard = () => {
 
   const [carLat, setCarLat] = useState(null);
   const [carLng, setCarLng] = useState(null);
-
   const [markers, setMarkers] = useState([]);
 
+  // ✅ Coordinate selection mode toggle
   const [coordSelect, setCoordSelect] = useState(false);
-  const [startCoord, setStartCoord] = useState(null);
-  const [endCoord, setEndCoord] = useState(null);
-  // Function to fetch markers from the backend
+
+  // ✅ State for selected coordinates (optional if you want to display them in UI)
+  const [startLat, setStartLatInput] = useState("");
+  const [startLng, setStartLngInput] = useState("");
+  const [endLat, setEndLatInput] = useState("");
+  const [endLng, setEndLngInput] = useState("");
+
+  // ✅ Fetch markers from backend
   const fetchMarkers = () => {
     fetch("http://localhost:8000/api/anomalies")
       .then((response) => response.json())
-      .then((data) => {
-        setMarkers(data);
-      })
-      .catch((error) => {
-        console.error("Error fetching markers:", error);
-      });
+      .then((data) => setMarkers(data))
+      .catch((error) => console.error("Error fetching markers:", error));
   };
 
   useEffect(() => {
@@ -47,6 +45,7 @@ const Dashboard = () => {
         gap: "20px",
       }}
     >
+      {/* ✅ MAIN MAP */}
       <div
         style={{
           width: "80%",
@@ -56,18 +55,43 @@ const Dashboard = () => {
           overflow: "hidden",
         }}
       >
-        {!coordSelect && (
-          <InteractiveMap carLat={carLat} carLng={carLng} markers={markers} />
-        )}
-        {coordSelect && <CoordinateSelectMap />}
+        <InteractiveMap
+          carLat={carLat}
+          carLng={carLng}
+          markers={markers}
+          coordSelect={coordSelect}
+          setStartLatInput={setStartLatInput}
+          setStartLngInput={setStartLngInput}
+          setEndLatInput={setEndLatInput}
+          setEndLngInput={setEndLngInput}
+        />
       </div>
 
-      <div style={{ width: "30%" }}>
-        <LiveStreamWindow
-          setCarLat={setCarLat}
-          setCarLng={setCarLng}
-          setCoordSelect={setCoordSelect}
-        />
+      {/* ✅ SIDEBAR */}
+      <div style={{ width: "30%", display: "flex", flexDirection: "column", gap: "20px" }}>
+        <LiveStreamWindow setCarLat={setCarLat} setCarLng={setCarLng} setCoordSelect={setCoordSelect} />
+
+        {/* ✅ Select Route Button */}
+        <button
+          onClick={() => setCoordSelect(!coordSelect)}
+          style={{
+            padding: "10px",
+            backgroundColor: coordSelect ? "#f87171" : "#60a5fa",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          {coordSelect ? "Route Selection ON (Click map to set Start/End)" : "🗺️ Enable Route Selection"}
+        </button>
+
+        {/* ✅ Show selected coordinates */}
+        <div style={{ fontSize: "14px" }}>
+          <p><strong>Start:</strong> {startLat && startLng ? `${startLat}, ${startLng}` : "Not selected"}</p>
+          <p><strong>End:</strong> {endLat && endLng ? `${endLat}, ${endLng}` : "Not selected"}</p>
+        </div>
       </div>
     </div>
   );
