@@ -286,3 +286,38 @@ def get_workers():
         }
         
     return jsonify([serialize_user(worker) for worker in workers])
+
+
+@staff_task_bp.route('/api/tasks/<int:task_id>/label', methods=['PUT'])
+def update_task_label(task_id):
+    """
+    Allows staff to manually update the detected label for a task.
+
+    Path Parameters:
+    - task_id (int): ID of the task to update.
+
+    JSON Body:
+    - label (str): New label to assign.
+
+    Returns:
+    - JSON with success message and updated label.
+    - 400 if invalid input.
+    - 404 if task or metadata not found.
+    """
+    data = request.get_json()
+    if not data or "label" not in data:
+        return jsonify({"error": "Missing label field"}), 400
+
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({"error": f"Task with id {task_id} not found"}), 404
+
+    # Assuming each Task has exactly one metadata entry
+    metadata = task.metadatas
+    if not metadata:
+        return jsonify({"error": f"No metadata found for task {task_id}"}), 404
+
+    metadata.label = data["label"]
+    db.session.commit()
+
+    return jsonify({"message": "Label updated successfully", "task_id": task.id, "new_label": metadata.label}), 200

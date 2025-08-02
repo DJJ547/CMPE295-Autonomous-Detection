@@ -1,27 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dropdown,
-  Tab,
-  Segment,
-  Input,
-  Form,
-  Button,
-  Icon,
-  Loader,
-  Modal,
-} from "semantic-ui-react";
-
+import { Dropdown, Tab, Segment, Input, Form, Button, Icon, Loader } from "semantic-ui-react";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io(
-  process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000"
-);
+const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
 
 const LiveStreamWindow = ({
   setCarLat,
   setCarLng,
-  // ✅ NEW: props from Dashboard -> InteractiveMap
   startLatInput,
   setStartLatInput,
   startLngInput,
@@ -30,17 +16,12 @@ const LiveStreamWindow = ({
   setEndLatInput,
   endLngInput,
   setEndLngInput,
+  coordSelect,
+  setCoordSelect
 }) => {
-  const [imageList, setImageList] = useState({
-    front: [],
-    back: [],
-    left: [],
-    right: [],
-  });
-
+  const [imageList, setImageList] = useState({ front: [], back: [], left: [], right: [] });
   const [imgDims, setImgDims] = useState({ width: 1, height: 1 });
   const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
   const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -131,7 +112,6 @@ const LiveStreamWindow = ({
       points: numPoints,
       model: selectedModel,
     });
-    setModalOpen(false);
   };
 
   // ✅ HANDLE IMAGE NAVIGATION
@@ -160,27 +140,16 @@ const LiveStreamWindow = ({
 
       return (
         <div key={idx} style={{ position: "absolute", left, top, width, height, zIndex: 5 }}>
-          <div
-            style={{
-              position: "absolute",
-              top: "-14px",
-              left: "0px",
-              color: "red",
-              fontSize: "10px",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-            }}
-          >
+          <div style={{
+            position: "absolute", top: "-14px", left: "0px", color: "red",
+            fontSize: "10px", fontWeight: 500, whiteSpace: "nowrap",
+          }}>
             {label} ({score})
           </div>
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "2px solid red",
-              backgroundColor: "rgba(255, 0, 0, 0.2)",
-            }}
-          />
+          <div style={{
+            width: "100%", height: "100%", border: "2px solid red",
+            backgroundColor: "rgba(255, 0, 0, 0.2)",
+          }} />
         </div>
       );
     });
@@ -210,14 +179,6 @@ const LiveStreamWindow = ({
                 {renderBoundingBoxes(boxes, imageData?.labels, imageData?.scores)}
               </div>
             )}
-
-            <Button
-              icon
-              onClick={() => setFullscreenOpen(true)}
-              style={{ position: "absolute", bottom: "1rem", right: "1rem", zIndex: 10 }}
-            >
-              <Icon name="expand" />
-            </Button>
           </div>
         </Tab.Pane>
       );
@@ -227,122 +188,6 @@ const LiveStreamWindow = ({
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Segment raised style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-        {/* ✅ STREAM CONTROL MODAL TO UPDATE SETTINGS */}
-        <Button
-          icon
-          labelPosition="left"
-          onClick={() => setModalOpen(true)}
-          style={{ marginBottom: "1rem" }}
-        >
-          <Icon name="settings" />
-          Show Stream Controls
-        </Button>
-
-        {/* ✅ STREAM SETTINGS MODAL */}
-        <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
-          <Modal.Header>
-            Stream Controls
-            <Icon
-              name="close"
-              onClick={() => setModalOpen(false)}
-              style={{ float: "right", cursor: "pointer" }}
-            />
-          </Modal.Header>
-
-          <Modal.Content>
-            {/* ✅ Stream Settings Form */}
-            <Form onSubmit={handleSubmit}>
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="Start Latitude"
-                placeholder="Click on the map or enter manually"
-                value={startLatInput}
-                onChange={(e) => setStartLatInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="Start Longitude"
-                value={startLngInput}
-                onChange={(e) => setStartLngInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="End Latitude"
-                placeholder="Click on the map or enter manually"
-                value={endLatInput}
-                onChange={(e) => setEndLatInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="End Longitude"
-                value={endLngInput}
-                onChange={(e) => setEndLngInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                label="Number of Points"
-                placeholder="e.g., 10"
-                value={numPoints}
-                onChange={(e) => setNumPoints(e.target.value)}
-              />
-              <Form.Field>
-                <label>Detection Model</label>
-                <Dropdown
-                  placeholder="Select Model"
-                  fluid
-                  selection
-                  options={[
-                    { key: "dino", text: "GroundingDINO", value: "dino" },
-                    { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
-                    { key: "yolo", text: "YOLO-v8", value: "yolo" },
-                  ]}
-                  value={selectedModel}
-                  onChange={(e, { value }) => setSelectedModel(value)}
-                />
-              </Form.Field>
-              <Form.Field control={Button} content="Update Stream" primary />
-            </Form>
-          </Modal.Content>
-        </Modal>
-
-        {/* ✅ FULLSCREEN VIEW */}
-        <Modal open={fullscreenOpen} onClose={() => setFullscreenOpen(false)} size="fullscreen" closeIcon>
-          <Modal.Header>Expanded Stream View</Modal.Header>
-          <Modal.Content style={{ backgroundColor: "#f9f9f9", height: "90vh", padding: 0 }}>
-            <Tab
-              menu={{ pointing: true }}
-              panes={panes}
-              activeIndex={activeTabIndex}
-              onTabChange={(e, { activeIndex }) => setActiveTabIndex(activeIndex)}
-            />
-            {maxLen > 0 && (
-              <Segment textAlign="center">
-                <Button icon labelPosition="left" onClick={handlePrev} disabled={currentIndex === 0}>
-                  <Icon name="arrow left" /> Previous
-                </Button>
-                <Button icon onClick={() => setIsPlaying(!isPlaying)}>
-                  <Icon name={isPlaying ? "pause" : "play"} />
-                </Button>
-                <Button icon labelPosition="right" onClick={handleNext} disabled={currentIndex === maxLen - 1}>
-                  Next <Icon name="arrow right" />
-                </Button>
-                <p style={{ marginTop: "1em" }}>
-                  Viewing image <strong>{currentIndex + 1}</strong> of <strong>{maxLen}</strong>
-                </p>
-              </Segment>
-            )}
-          </Modal.Content>
-        </Modal>
-
         {/* ✅ IMAGE TABS */}
         <Tab
           menu={{ pointing: true }}
@@ -367,6 +212,86 @@ const LiveStreamWindow = ({
             </p>
           </Segment>
         )}
+
+        {/* ✅ STREAM SETTINGS FORM BELOW STREAM */}
+        <Segment>
+          <Form onSubmit={handleSubmit}>
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="Start Latitude"
+              value={startLatInput}
+              onChange={(e) => setStartLatInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="Start Longitude"
+              value={startLngInput}
+              onChange={(e) => setStartLngInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="End Latitude"
+              value={endLatInput}
+              onChange={(e) => setEndLatInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="End Longitude"
+              value={endLngInput}
+              onChange={(e) => setEndLngInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              label="Number of Points"
+              placeholder="e.g., 10"
+              value={numPoints}
+              onChange={(e) => setNumPoints(e.target.value)}
+            />
+            <Form.Field>
+              <label>Detection Model</label>
+              <Dropdown
+                placeholder="Select Model"
+                fluid
+                selection
+                options={[
+                  { key: "dino", text: "GroundingDINO", value: "dino" },
+                  { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
+                  { key: "yolo", text: "YOLO-v8", value: "yolo" },
+                ]}
+                value={selectedModel}
+                onChange={(e, { value }) => setSelectedModel(value)}
+              />
+            </Form.Field>
+
+            {/* ✅ BUTTON ROW */}
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <Button primary type="submit">Update Stream</Button>
+              <Button
+                type="button"
+                color={coordSelect ? "red" : "red"}
+                basic={!coordSelect}   // ➡ Makes it lighter when OFF
+                onClick={() => setCoordSelect(!coordSelect)}
+                style={{
+                  fontWeight: "bold",
+                  border: coordSelect ? "2px solid #b91c1c" : "2px solid #ef4444",
+                  backgroundColor: coordSelect ? "#b91c1c" : "#ef4444",
+                  color: "white"
+                }}
+              >
+                {coordSelect ? "Marking ON" : "Mark Coor"}
+              </Button>
+            </div>
+          </Form>
+        </Segment>
       </Segment>
     </div>
   );

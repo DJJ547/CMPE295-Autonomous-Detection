@@ -69,29 +69,20 @@ const Dashboard = () => {
 
       {/* ✅ SIDEBAR */}
       <div style={{ width: "30%", display: "flex", flexDirection: "column", gap: "20px" }}>
-        <LiveStreamWindow setCarLat={setCarLat} setCarLng={setCarLng} setCoordSelect={setCoordSelect} />
-
-        {/* ✅ Select Route Button */}
-        <button
-          onClick={() => setCoordSelect(!coordSelect)}
-          style={{
-            padding: "10px",
-            backgroundColor: coordSelect ? "#f87171" : "#60a5fa",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: "bold"
-          }}
-        >
-          {coordSelect ? "Route Selection ON (Click map to set Start/End)" : "🗺️ Enable Route Selection"}
-        </button>
-
-        {/* ✅ Show selected coordinates */}
-        <div style={{ fontSize: "14px" }}>
-          <p><strong>Start:</strong> {startLat && startLng ? `${startLat}, ${startLng}` : "Not selected"}</p>
-          <p><strong>End:</strong> {endLat && endLng ? `${endLat}, ${endLng}` : "Not selected"}</p>
-        </div>
+        <LiveStreamWindow
+          setCarLat={setCarLat}
+          setCarLng={setCarLng}
+          coordSelect={coordSelect}
+          setCoordSelect={setCoordSelect}
+          startLatInput={startLat}
+          setStartLatInput={setStartLatInput}
+          startLngInput={startLng}
+          setStartLngInput={setStartLngInput}
+          endLatInput={endLat}
+          setEndLatInput={setEndLatInput}
+          endLngInput={endLng}
+          setEndLngInput={setEndLngInput}
+        />
       </div>
     </div>
   );

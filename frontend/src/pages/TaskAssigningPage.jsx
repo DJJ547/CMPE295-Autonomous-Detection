@@ -55,6 +55,11 @@ export default function TaskAssigningPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  // NEW: Label edit modal states
+  const [editLabelModalOpen, setEditLabelModalOpen] = useState(false);
+  const [labelInput, setLabelInput] = useState("");
+  const [selectedTaskForLabel, setSelectedTaskForLabel] = useState(null);
+
   useEffect(() => {
     if (!user) return;
 
@@ -74,7 +79,7 @@ export default function TaskAssigningPage() {
         data.map((e) => ({
           id: e.task_id,
           image: e.image_url,
-          metadata: Array.isArray(e.metadata) ? e.metadata : [],
+          metadata: e.metadata || {}, // ensure object
           title: e.label,
           progress_status: e.progress_status,
           verification_status: e.verification_status,
@@ -110,17 +115,29 @@ export default function TaskAssigningPage() {
   async function updateTasks(updates) {
     await axios.put(`${API_BASE}api/tasks/bulk`, updates);
   }
+
   async function startTasks(ids) {
     await axios.post(`${API_BASE}api/startTasks`, {
       user_id: user.id,
       task_ids: ids,
     });
   }
+
   async function completeTasks(ids) {
     await axios.post(`${API_BASE}api/completeTasks`, {
       user_id: user.id,
       task_ids: ids,
     });
+  }
+
+  // 🆕 NEW: Update label API call
+  async function handleLabelUpdate(taskId, newLabel) {
+    try {
+      await axios.put(`${API_BASE}api/tasks/${taskId}/label`, { label: newLabel });
+      fetchTasks();
+    } catch (err) {
+      console.error("Error updating label:", err);
+    }
   }
 
   // --- handlers ---
@@ -256,7 +273,7 @@ export default function TaskAssigningPage() {
               whiteSpace: "nowrap",
             }}
           >
-            {meta.label} ({meta.score.toFixed(3)})
+            {meta.label} ({meta.score?.toFixed(3)})
           </div>
         </div>
       );
@@ -307,9 +324,6 @@ export default function TaskAssigningPage() {
                   style={{
                     width: "7rem",
                     height: "2.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     fontWeight: "bold",
                   }}
                 >
@@ -325,14 +339,30 @@ export default function TaskAssigningPage() {
                   style={{
                     width: "7rem",
                     height: "2.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     fontWeight: "bold",
                   }}
                 >
                   👤 Assign
                 </Button>
+
+                {/* NEW: Edit Label Button */}
+                <Button
+                  basic
+                  color="purple"
+                  onClick={() => {
+                    setSelectedTaskForLabel(task);
+                    setLabelInput(task.title);
+                    setEditLabelModalOpen(true);
+                  }}
+                  style={{
+                    width: "7rem",
+                    height: "2.5rem",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ✏️ Edit Label
+                </Button>
+
                 <Button
                   basic
                   color="green"
@@ -340,9 +370,6 @@ export default function TaskAssigningPage() {
                   style={{
                     width: "7rem",
                     height: "2.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     fontWeight: "bold",
                   }}
                 >
@@ -355,9 +382,6 @@ export default function TaskAssigningPage() {
                   style={{
                     width: "7rem",
                     height: "2.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     fontWeight: "bold",
                   }}
                 >
@@ -374,9 +398,6 @@ export default function TaskAssigningPage() {
                     style={{
                       width: "7rem",
                       height: "2.5rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
                       fontWeight: "bold",
                     }}
                   >
@@ -391,9 +412,6 @@ export default function TaskAssigningPage() {
                     style={{
                       width: "7rem",
                       height: "2.5rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
                       fontWeight: "bold",
                     }}
                   >
@@ -559,6 +577,40 @@ export default function TaskAssigningPage() {
     </Modal>
   );
 
+  // --- Edit Label Modal ---
+  const EditLabelModal = (
+    <Modal
+      open={editLabelModalOpen}
+      onClose={() => setEditLabelModalOpen(false)}
+      size="small"
+    >
+      <Modal.Header>Edit Task Label</Modal.Header>
+      <Modal.Content>
+        <Input
+          fluid
+          placeholder="Enter new label"
+          value={labelInput}
+          onChange={(e) => setLabelInput(e.target.value)}
+        />
+      </Modal.Content>
+      <Modal.Actions>
+        <Button onClick={() => setEditLabelModalOpen(false)}>Cancel</Button>
+        <Button
+          primary
+          disabled={!labelInput.trim()}
+          onClick={async () => {
+            await handleLabelUpdate(selectedTaskForLabel.id, labelInput);
+            setEditLabelModalOpen(false);
+            setLabelInput("");
+            setSelectedTaskForLabel(null);
+          }}
+        >
+          Save
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
+
   return (
     <div style={{ padding: 20 }}>
       <h2>
@@ -572,6 +624,7 @@ export default function TaskAssigningPage() {
         }}
       />
       {isStaff && AssignModal}
+      {isStaff && EditLabelModal}
     </div>
   );
 }
