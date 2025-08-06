@@ -47,10 +47,10 @@ def check_alignment(label, caption, ce_threshold=0.3):
 # ===== Main Function =====
 def detect_objects(image_path: str,
                    text_labels: List[str],
-                   threshold: float = 0.35,
-                   text_threshold: float = 0.35,
+                   threshold: float = 0.4,
+                   text_threshold: float = 0.3,
                    allowed_keywords: List[str] = None,
-                   ce_threshold: float = 0.3,
+                   ce_threshold: float = 0.05,
                    pad_pct: float = 0.2):
     """
     Detect objects in an image using GroundingDINO + BLIP + CrossEncoder alignment.

@@ -209,13 +209,20 @@ export default function TaskAssigningPage() {
     const q = searchQuery.trim().toLowerCase();
     return tasks
       .filter((t) => {
+        // 🆕 if discarded, only show under discarded tab
+        if (t.verification_status === "discarded" && selectedTab !== "discarded") {
+          return false;
+        }
+
         const okStatus =
           selectedTab === "all" ||
           t.progress_status === selectedTab ||
           t.verification_status === selectedTab;
+
         const okSearch =
           t.title.toLowerCase().includes(q) ||
           t.location.toLowerCase().includes(q);
+
         return okStatus && okSearch;
       })
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -449,10 +456,10 @@ export default function TaskAssigningPage() {
             icon={
               searchQuery
                 ? {
-                    name: "close",
-                    link: true,
-                    onClick: () => setSearchQuery(""),
-                  }
+                  name: "close",
+                  link: true,
+                  onClick: () => setSearchQuery(""),
+                }
                 : "search"
             }
             placeholder="Search by title or location..."
@@ -468,48 +475,48 @@ export default function TaskAssigningPage() {
           {(isStaff ||
             selectedTab === "in_progress" ||
             selectedTab === "assigned") && (
-            <div style={{ display: "flex", gap: "0.5rem", marginBottom: 20 }}>
-              <Label>
-                <strong>{selectedIds.length}</strong> selected
-              </Label>
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: 20 }}>
+                <Label>
+                  <strong>{selectedIds.length}</strong> selected
+                </Label>
 
-              {isStaff && (
-                <>
-                  <Button
-                    color="orange"
-                    disabled={!selectedIds.length}
-                    onClick={() => handleVerify()}
-                  >
-                    🖊 Verify Selected
-                  </Button>
-                  <Button
-                    color="blue"
-                    disabled={!selectedIds.length}
-                    onClick={() => setAssignModalOpen(true)}
-                  >
-                    👤 Assign Selected
-                  </Button>
-                </>
-              )}
+                {isStaff && (
+                  <>
+                    <Button
+                      color="orange"
+                      disabled={!selectedIds.length}
+                      onClick={() => handleVerify()}
+                    >
+                      🖊 Verify Selected
+                    </Button>
+                    <Button
+                      color="blue"
+                      disabled={!selectedIds.length}
+                      onClick={() => setAssignModalOpen(true)}
+                    >
+                      👤 Assign Selected
+                    </Button>
+                  </>
+                )}
 
-              {!isStaff && (
+                {!isStaff && (
+                  <Button
+                    color="yellow"
+                    disabled={!selectedIds.length}
+                    onClick={() => handleStartSelected()}
+                  >
+                    ▶️ Start Selected
+                  </Button>
+                )}
                 <Button
-                  color="yellow"
+                  color="grey"
                   disabled={!selectedIds.length}
-                  onClick={() => handleStartSelected()}
+                  onClick={() => handleDone()}
                 >
-                  ▶️ Start Selected
+                  ✅ Complete Selected
                 </Button>
-              )}
-              <Button
-                color="grey"
-                disabled={!selectedIds.length}
-                onClick={() => handleDone()}
-              >
-                ✅ Complete Selected
-              </Button>
-            </div>
-          )}
+              </div>
+            )}
 
           {/* Cards grid */}
           {loading ? (

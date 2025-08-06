@@ -18,7 +18,7 @@ YOLO_MODEL_PATHS = {
     "homeless":    "./models/homeless.pt",
     "graffiti":    "./models/graffiti.pt"
 }
-CONFIDENCE_THRESHOLD = 0.35
+CONFIDENCE_THRESHOLD = 0.25
 
 # ===== Model Registry =====
 yolo_models = {}
