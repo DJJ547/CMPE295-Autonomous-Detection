@@ -5,5 +5,5 @@ class Config:
     SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{os.getenv("MYSQL_DB_USERNAME")}:{os.getenv("MYSQL_DB_PASSWORD")}@{os.getenv("MYSQL_DB_HOST")}:{os.getenv("MYSQL_DB_PORT")}/{os.getenv("MYSQL_DB_NAME")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_HEADERS = "Content-Type"
-    LABELS = ["graffiti", "pothole", "crack", "tent"]
-    ALLOWED_KEYWORDS = ["graffiti", "pothole", "crack", "tent"]
+    LABELS = ["graffiti", "crack", "tent"]
+    ALLOWED_KEYWORDS = ["graffiti", "crack", "tent"]
