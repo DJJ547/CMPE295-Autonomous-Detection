@@ -257,7 +257,7 @@ export default function TaskAssigningPage() {
       if (!meta) return null;
 
       const scaleX = dims.width / 640;
-      const scaleY = dims.height / 620;
+      const scaleY = dims.height / 640;
       const x1 = meta.X1_loc * scaleX;
       const y1 = meta.Y1_loc * scaleY;
       const x2 = meta.X2_loc * scaleX;

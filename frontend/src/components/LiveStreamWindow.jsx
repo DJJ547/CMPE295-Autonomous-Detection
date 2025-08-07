@@ -112,7 +112,11 @@ const LiveStreamWindow = ({
       points: numPoints,
       model: selectedModel,
     });
+
+    // 🔁 Reset coordSelect to false when submitting
+    setCoordSelect(false);
   };
+
 
   // ✅ HANDLE IMAGE NAVIGATION
   const handlePrev = () => {
