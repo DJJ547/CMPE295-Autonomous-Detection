@@ -151,8 +151,34 @@ def stream_all_images(data):
                 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
                 image_name = f"{timestamp}_{idx + 1}.jpg"
                 stream_temp_local_path = os.path.join(stream_temp_dir, image_name)
+
+                # Step 1: Save the image from response
                 with open(stream_temp_local_path, "wb") as f:
                     f.write(response.content)
+
+                # Step 2: Mask the bottom-left area to remove Google watermark
+                img = cv2.imread(stream_temp_local_path)
+                if img is not None:
+                    h, w, _ = img.shape
+
+                    # Define the mask size (adjust if needed)
+                    mask_width = 640   # width of the masked area
+                    mask_height = 20   # height of the masked area
+
+                    # Coordinates: bottom-left corner
+                    x1 = 0
+                    y1 = h - mask_height
+                    x2 = x1 + mask_width
+                    y2 = h
+
+                    # Fill with black (0, 0, 0) or use white (255, 255, 255)
+                    cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 0), thickness=-1)
+
+                    # Save masked image back
+                    cv2.imwrite(stream_temp_local_path, img)
+                else:
+                    print(f"❌ Failed to load image for masking: {stream_temp_local_path}")
+
 
                 # Run selected detection model
                 try:
@@ -204,10 +230,16 @@ def handle_detection_result(
         detected_temp_local_path = os.path.join(detected_temp_dir, image_name)
         with open(detected_temp_local_path, "wb") as f:
             f.write(response_content)
+
         s3_detected_image_url = upload_file_to_s3(
             detected_temp_local_path, bucket_name, s3_detected_root_folder_name
         )
+
         if s3_detected_image_url:
+            # 🧠 Extract the first caption from detection output, if available
+            caption = output[0].get("caption") if output else None
+
+            # ✅ Add caption as new argument in DB insert function
             mysql_db_utils.register_anomaly_to_db(
-                lat, lon, address, direction, s3_detected_image_url, output
+                lat, lon, address, direction, s3_detected_image_url, output, caption
             )

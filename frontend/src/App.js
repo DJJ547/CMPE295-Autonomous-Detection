@@ -26,7 +26,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/test" element={<Test />} />
         <Route
-          path="/:userId"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <PageLayout>
@@ -36,7 +36,7 @@ export default function App() {
           }
         />
         <Route
-          path="/analytics/:userId"
+          path="/analytics"
           element={
             <ProtectedRoute>
               <PageLayout>

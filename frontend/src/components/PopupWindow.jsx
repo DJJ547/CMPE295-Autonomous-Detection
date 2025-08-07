@@ -1,12 +1,21 @@
 import React, { useState } from "react";
-import "./PopupWindow.css"; // Create a CSS file for styling
+import { Modal, Header, Image, Button, Label, Segment } from "semantic-ui-react";
 
-const PopupWindow = ({ marker, onClose }) => {
+const PopupWindow = ({
+  marker,
+  onClose,
+  onVerify,
+  onAssign,
+  onDiscard,
+  onStart,
+  onComplete,
+  isStaff,
+  isDash = false,
+}) => {
   const [imgDims, setImgDims] = useState({ width: 1, height: 1 });
 
   if (!marker) return null;
 
-    // Function to render bounding boxes
   const renderBoundingBoxes = (meta) => {
     const scaleX = imgDims.width / 640;
     const scaleY = imgDims.height / 640;
@@ -51,22 +60,65 @@ const PopupWindow = ({ marker, onClose }) => {
   };
 
   return (
-    <div className="popup-window">
-      <div className="popup-content">
-        <button className="close-btn" onClick={onClose}>×</button>
-        <h3>Event ID: {marker.id}</h3>
-        <p>Timestamp: {new Date(marker.timestamp).toLocaleString()}</p>
-        <p>
-          Location: {marker.street || "Unknown"}, {marker.city || "Unknown"},
-          {marker.state || "Unknown"}, {marker.zipcode || "Unknown"}
-        </p>
-        {marker.images?.map((image, imgIndex) => (
-          <div key={imgIndex} style={{ marginBottom: "10px", position: "relative" }}>
-            <h4>{image.direction} Image:</h4>
+    <Modal open onClose={onClose} size="large" closeIcon>
+      <Header content={`Event ID: ${marker.id}`} />
+      <Modal.Content scrolling>
+        <Segment>
+          <p><strong>Time:</strong> {new Date(marker.timestamp).toLocaleString()}</p>
+          <p><strong>Location:</strong> {marker.street || "Unknown"}, {marker.city || "Unknown"}, {marker.state || "Unknown"}, {marker.zipcode || "Unknown"}</p>
+        </Segment>
+
+        {isDash ? (
+          // === DASH VERSION: Multiple images with bounding boxes ===
+          marker.images?.map((image, imgIndex) => (
+            <Segment key={imgIndex}>
+              <Header as="h4" dividing>{image.direction} Image</Header>
+
+              {image.metadatas?.length > 0 && (
+                <div style={{ marginBottom: "10px" }}>
+                  <strong>Captions:</strong>{" "}
+                  {image.metadatas.map((meta, i) => (
+                    <Label key={i} color="blue" size="tiny" style={{ marginBottom: "4px" }}>
+                      {meta.caption}
+                    </Label>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ position: "relative", width: "100%", height: "auto" }}>
+                <Image
+                  src={image.image_url}
+                  alt={image.direction}
+                  onLoad={(e) => {
+                    setImgDims({
+                      width: e.target.offsetWidth,
+                      height: e.target.offsetHeight,
+                    });
+                  }}
+                  style={{ width: "100%", height: "auto", objectFit: "contain" }}
+                />
+                {image.metadatas?.map((meta) => renderBoundingBoxes(meta))}
+              </div>
+            </Segment>
+          ))
+        ) : (
+          // === TASK PAGE VERSION: Single image and single caption ===
+          <Segment>
+            <Header as="h4" dividing>Detection Image</Header>
+
+            {marker.metadata?.caption && (
+              <div style={{ marginBottom: "10px" }}>
+                <strong>Caption:</strong>{" "}
+                <Label color="blue" size="tiny" style={{ marginBottom: "4px" }}>
+                  {marker.metadata.caption}
+                </Label>
+              </div>
+            )}
+
             <div style={{ position: "relative", width: "100%", height: "auto" }}>
-              <img
-                src={image.image_url}
-                alt={image.direction}
+              <Image
+                src={marker.image}
+                alt="Detection"
                 onLoad={(e) => {
                   setImgDims({
                     width: e.target.offsetWidth,
@@ -75,12 +127,53 @@ const PopupWindow = ({ marker, onClose }) => {
                 }}
                 style={{ width: "100%", height: "auto", objectFit: "contain" }}
               />
-              {image.metadatas?.map((meta) => renderBoundingBoxes(meta))}
+              {marker.metadata && renderBoundingBoxes(marker.metadata)}
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          </Segment>
+        )}
+      </Modal.Content>
+
+      {/* === ACTIONS === */}
+      <Modal.Actions>
+        {isDash ? (
+          <Button onClick={onClose}>Close</Button>
+        ) : (
+          <>
+            {isStaff ? (
+              <>
+                {marker.status === "unverified" && (
+                  <Button color="orange" onClick={() => onVerify(marker.id)}>
+                    🖊 Verify
+                  </Button>
+                )}
+                {marker.status === "verified" && (
+                  <Button color="blue" onClick={onAssign}>
+                    👤 Assign
+                  </Button>
+                )}
+                <Button color="red" onClick={() => onDiscard(marker.id)}>
+                  🗑 Discard
+                </Button>
+              </>
+            ) : (
+              <>
+                {marker.status === "assigned" && (
+                  <Button color="yellow" onClick={onStart}>
+                    ▶️ Start
+                  </Button>
+                )}
+                {marker.status === "in_progress" && (
+                  <Button color="green" onClick={onComplete}>
+                    ✅ Complete
+                  </Button>
+                )}
+              </>
+            )}
+            <Button onClick={onClose}>Close</Button>
+          </>
+        )}
+      </Modal.Actions>
+    </Modal>
   );
 };
 

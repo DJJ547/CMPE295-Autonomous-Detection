@@ -25,26 +25,24 @@ const InteractiveMap = ({
 
   // ✅ Click handler for selecting start & end
   const handleMapClick = (event) => {
-  // 🚨 Only allow selection when coordSelect is true
-  if (!coordSelect) return;
+    // 🚨 Only allow selection when coordSelect is true
+    if (!coordSelect) return;
 
-  const lat = event.detail.latLng.lat;
-  const lng = event.detail.latLng.lng;
+    const lat = event.detail.latLng.lat;
+    const lng = event.detail.latLng.lng;
 
-  if (step === 1) {
-    setStartCoord({ lat, lng });
-    setStartLatInput(lat.toFixed(6));
-    setStartLngInput(lng.toFixed(6));
-    setStep(2);
-  } else {
-    setEndCoord({ lat, lng });
-    setEndLatInput(lat.toFixed(6));
-    setEndLngInput(lng.toFixed(6));
-    setStep(1); // reset for next round
-  }
-};
-
-
+    if (step === 1) {
+      setStartCoord({ lat, lng });
+      setStartLatInput(lat.toFixed(6));
+      setStartLngInput(lng.toFixed(6));
+      setStep(2);
+    } else {
+      setEndCoord({ lat, lng });
+      setEndLatInput(lat.toFixed(6));
+      setEndLngInput(lng.toFixed(6));
+      setStep(1); // reset for next round
+    }
+  };
 
   return (
     <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
@@ -57,13 +55,23 @@ const InteractiveMap = ({
         style={{ width: "100%", height: "100%" }}
         options={{
           styles: [
-            { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
-            { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+            {
+              featureType: "poi",
+              elementType: "all",
+              stylers: [{ visibility: "off" }],
+            },
+            {
+              featureType: "transit",
+              elementType: "all",
+              stylers: [{ visibility: "off" }],
+            },
           ],
         }}
       >
         {/* ✅ Car Marker */}
-        {carLat && carLng && <CarMarker position={{ lat: carLat, lng: carLng }} />}
+        {carLat && carLng && (
+          <CarMarker position={{ lat: carLat, lng: carLng }} />
+        )}
 
         {/* ✅ Existing markers */}
         {Array.isArray(markers) &&
@@ -74,7 +82,9 @@ const InteractiveMap = ({
                 lat: parseFloat(marker.latitude),
                 lng: parseFloat(marker.longitude),
               }}
-              icon={{ url: `http://maps.google.com/mapfiles/ms/icons/red-dot.png` }}
+              icon={{
+                url: `http://maps.google.com/mapfiles/ms/icons/red-dot.png`,
+              }}
               info={marker}
               onClick={() => setSelectedMarker(marker)}
             />
@@ -84,7 +94,9 @@ const InteractiveMap = ({
         {startCoord && (
           <Marker
             position={startCoord}
-            icon={{ url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" }}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+            }}
             title={`Start: ${startCoord.lat}, ${startCoord.lng}`}
           />
         )}
@@ -103,7 +115,11 @@ const InteractiveMap = ({
         {/* ✅ Optional popup */}
         {selectedMarker && (
           <div style={{ position: "absolute", top: 0, left: 0 }}>
-            <PopupWindow marker={selectedMarker} onClose={() => setSelectedMarker(null)} />
+            <PopupWindow
+              marker={selectedMarker}
+              onClose={() => setSelectedMarker(null)}
+              isDash={true}
+            />
           </div>
         )}
       </Map>

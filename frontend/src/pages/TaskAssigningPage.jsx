@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../contexts/auth";
+import PopupWindow from "../components/PopupWindow";
 import {
   Modal,
   Tab,
@@ -23,10 +24,12 @@ const API_BASE = process.env.REACT_APP_LOCALHOST; // e.g. "http://127.0.0.1:8000
 
 const getColor = (status) => {
   switch (status) {
-    case "created":
+    case "unverified":
       return "grey";
-    case "assigned":
+    case "verified":
       return "blue";
+    case "assigned":
+      return "purple";
     case "in_progress":
       return "yellow";
     case "completed":
@@ -37,11 +40,13 @@ const getColor = (status) => {
 };
 
 export default function TaskAssigningPage() {
+  const [selectedTaskForPopup, setSelectedTaskForPopup] = useState(null);
+
   const { user } = useAuth();
   const isStaff = user?.role === "admin";
 
   const statusTabs = isStaff
-    ? ["all", "unverified", "verified", "assigned", "completed", "discarded"]
+    ? ["unverified", "verified", "assigned", "in_progress", "completed", "discarded"]
     : ["assigned", "in_progress", "completed"];
 
   const [loading, setLoading] = useState(false);
@@ -79,10 +84,9 @@ export default function TaskAssigningPage() {
         data.map((e) => ({
           id: e.task_id,
           image: e.image_url,
-          metadata: e.metadata || {}, // ensure object
+          metadata: e.metadata || {},
           title: e.label,
-          progress_status: e.progress_status,
-          verification_status: e.verification_status,
+          status: e.status,
           assignedTo: e.worker_name ?? "Unassigned",
           location: e.street || "",
           timestamp: e.created_at,
@@ -149,7 +153,7 @@ export default function TaskAssigningPage() {
   const handleVerify = async (id = null) => {
     const ids = id ? [id] : selectedIds;
     await updateTasks(
-      ids.map((i) => ({ task_id: i, verification_status: "verified" }))
+      ids.map((i) => ({ task_id: i, status: "verified" }))
     );
     fetchTasks();
   };
@@ -164,7 +168,7 @@ export default function TaskAssigningPage() {
     const ids = id ? [id] : selectedIds;
     if (isStaff) {
       await updateTasks(
-        ids.map((i) => ({ task_id: i, progress_status: "completed" }))
+        ids.map((i) => ({ task_id: i, status: "completed" }))
       );
     } else {
       await completeTasks(ids);
@@ -180,7 +184,7 @@ export default function TaskAssigningPage() {
 
     const update = updateIds.map((id) => ({
       task_id: id,
-      verification_status: "discarded",
+      status: "discarded",
     }));
 
     await updateTasks(update);
@@ -192,7 +196,7 @@ export default function TaskAssigningPage() {
     await updateTasks(
       ids.map((i) => ({
         task_id: i,
-        progress_status: "assigned",
+        status: "assigned",
         worker_id: selectedWorkerId,
       }))
     );
@@ -210,14 +214,13 @@ export default function TaskAssigningPage() {
     return tasks
       .filter((t) => {
         // 🆕 if discarded, only show under discarded tab
-        if (t.verification_status === "discarded" && selectedTab !== "discarded") {
+        if (t.status === "discarded" && selectedTab !== "discarded") {
           return false;
         }
 
         const okStatus =
           selectedTab === "all" ||
-          t.progress_status === selectedTab ||
-          t.verification_status === selectedTab;
+          t.status === selectedTab;
 
         const okSearch =
           t.title.toLowerCase().includes(q) ||
@@ -232,6 +235,11 @@ export default function TaskAssigningPage() {
   const TaskCard = ({ task, selected }) => {
     const imgRef = useRef();
     const [dims, setDims] = useState({ width: 1, height: 1 });
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(task.title);
+    useEffect(() => {
+      setEditValue(task.title);
+    }, [task.title]);
 
     useEffect(() => {
       if (!imgRef.current) return;
@@ -249,7 +257,7 @@ export default function TaskAssigningPage() {
       if (!meta) return null;
 
       const scaleX = dims.width / 640;
-      const scaleY = dims.height / 640;
+      const scaleY = dims.height / 620;
       const x1 = meta.X1_loc * scaleX;
       const y1 = meta.Y1_loc * scaleY;
       const x2 = meta.X2_loc * scaleX;
@@ -299,16 +307,71 @@ export default function TaskAssigningPage() {
             ref={imgRef}
             src={task.image}
             alt=""
-            style={{ width: "100%", height: "auto", display: "block" }}
+            style={{ width: "100%", height: "auto", display: "block", cursor: "pointer" }}
+            onClick={() =>
+              setSelectedTaskForPopup(task)
+            }
           />
+
           {renderBox()}
         </div>
         <Card.Content>
-          <Card.Header>{task.title}</Card.Header>
+          <Card.Header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            {isEditing ? (
+              <Input
+                value={editValue}
+                size="small"
+                autoFocus
+                onChange={(e, { value }) => setEditValue(value)}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter") {
+                    await handleLabelUpdate(task.id, editValue);
+                    setIsEditing(false);
+                  } else if (e.key === "Escape") {
+                    setEditValue(task.title);
+                    setIsEditing(false);
+                  }
+                }}
+                style={{ flex: 1, marginRight: 8 }}
+              />
+            ) : (
+              <span>{task.title}</span>
+            )}
+
+            {/* ▶️ Edit / Save & Cancel buttons */}
+            {isStaff && (
+              isEditing ? (
+                <span>
+                  <Icon
+                    name="check"
+                    link
+                    onClick={async () => {
+                      await handleLabelUpdate(task.id, editValue);
+                      setIsEditing(false);
+                    }}
+                  />
+                  <Icon
+                    name="close"
+                    link
+                    onClick={() => {
+                      setEditValue(task.title);
+                      setIsEditing(false);
+                    }}
+                  />
+                </span>
+              ) : (
+                <Icon
+                  name="pencil"
+                  link
+                  onClick={() => setIsEditing(true)}
+                />
+              )
+            )}
+          </Card.Header>
           <Card.Meta>{task.location}</Card.Meta>
           <Card.Description>
-            <Label color={getColor(task.progress_status)}>
-              {task.progress_status}
+            <Label color={getColor(task.status)}>
+              {task.status}
             </Label>
           </Card.Description>
         </Card.Content>
@@ -324,109 +387,61 @@ export default function TaskAssigningPage() {
           >
             {isStaff ? (
               <>
-                <Button
-                  basic
-                  color="orange"
-                  onClick={() => handleVerify(task.id)}
-                  style={{
-                    width: "7rem",
-                    height: "2.5rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  🖊 Verify
-                </Button>
-                <Button
-                  basic
-                  color="blue"
-                  onClick={() => {
-                    setSelectedIds([task.id]);
-                    setAssignModalOpen(true);
-                  }}
-                  style={{
-                    width: "7rem",
-                    height: "2.5rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  👤 Assign
-                </Button>
-
-                {/* NEW: Edit Label Button */}
-                <Button
-                  basic
-                  color="purple"
-                  onClick={() => {
-                    setSelectedTaskForLabel(task);
-                    setLabelInput(task.title);
-                    setEditLabelModalOpen(true);
-                  }}
-                  style={{
-                    width: "7rem",
-                    height: "2.5rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  ✏️ Edit Label
-                </Button>
-
-                <Button
-                  basic
-                  color="green"
-                  onClick={() => handleDone(task.id)}
-                  style={{
-                    width: "7rem",
-                    height: "2.5rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  ✅ Complete
-                </Button>
-                <Button
-                  basic
-                  color="red"
-                  onClick={() => handleDiscard(task.id)}
-                  style={{
-                    width: "7rem",
-                    height: "2.5rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  🗑 Discard
-                </Button>
+                {task.status !== "discarded" && task.status === "unverified" && (
+                  <><Button
+                    color="orange"
+                    onClick={() => handleVerify(task.id)}
+                  >
+                    🖊 Verify
+                  </Button>
+                    <Button
+                      color="red"
+                      onClick={() => handleDiscard(task.id)}
+                    >
+                      🗑 Discard
+                    </Button></>
+                )}
+                {task.status !== "discarded" && task.status === "verified" && (
+                  <>
+                    <Button
+                      color="blue"
+                      onClick={() => {
+                        setSelectedIds([task.id]);
+                        setAssignModalOpen(true);
+                      }}
+                    >
+                      👤 Assign
+                    </Button>
+                    <Button
+                      color="red"
+                      onClick={() => handleDiscard(task.id)}
+                    >
+                      🗑 Discard
+                    </Button>
+                  </>
+                )}
               </>
             ) : (
               <>
-                {task.progress_status === "assigned" && (
+                {task.status === "assigned" && (
                   <Button
-                    basic
                     color="orange"
                     onClick={() => markAsStarted(task.id)}
-                    style={{
-                      width: "7rem",
-                      height: "2.5rem",
-                      fontWeight: "bold",
-                    }}
                   >
                     ▶️ Start
                   </Button>
                 )}
-                {task.progress_status === "in_progress" && (
+                {task.status === "in_progress" && (
                   <Button
-                    basic
                     color="green"
                     onClick={() => handleDone(task.id)}
-                    style={{
-                      width: "7rem",
-                      height: "2.5rem",
-                      fontWeight: "bold",
-                    }}
                   >
                     ✅ Complete
                   </Button>
                 )}
               </>
             )}
+
           </div>
         </Card.Content>
       </Card>
@@ -438,8 +453,8 @@ export default function TaskAssigningPage() {
     const list = filteredTasks().filter(
       (t) =>
         status === "all" ||
-        t.progress_status === status ||
-        t.verification_status === status
+        t.status === status ||
+        t.status === status
     );
     const totalPages = Math.ceil(list.length / itemsPerPage);
     const slice = list.slice(
@@ -472,51 +487,44 @@ export default function TaskAssigningPage() {
           />
 
           {/* Bulk actions for staff */}
-          {(isStaff ||
-            selectedTab === "in_progress" ||
-            selectedTab === "assigned") && (
-              <div style={{ display: "flex", gap: "0.5rem", marginBottom: 20 }}>
-                <Label>
-                  <strong>{selectedIds.length}</strong> selected
-                </Label>
+          {selectedIds.length > 0 && (
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: 20 }}>
+              <Label>
+                <strong>{selectedIds.length}</strong> selected
+              </Label>
 
-                {isStaff && (
-                  <>
-                    <Button
-                      color="orange"
-                      disabled={!selectedIds.length}
-                      onClick={() => handleVerify()}
-                    >
-                      🖊 Verify Selected
-                    </Button>
-                    <Button
-                      color="blue"
-                      disabled={!selectedIds.length}
-                      onClick={() => setAssignModalOpen(true)}
-                    >
-                      👤 Assign Selected
-                    </Button>
-                  </>
-                )}
+              {isStaff && selectedTab === "unverified" && (
+                <Button color="orange" onClick={() => handleVerify()}>
+                  🖊 Verify Selected
+                </Button>
+              )}
 
-                {!isStaff && (
-                  <Button
-                    color="yellow"
-                    disabled={!selectedIds.length}
-                    onClick={() => handleStartSelected()}
-                  >
-                    ▶️ Start Selected
-                  </Button>
-                )}
-                <Button
-                  color="grey"
-                  disabled={!selectedIds.length}
-                  onClick={() => handleDone()}
-                >
+              {isStaff && selectedTab === "verified" && (
+                <Button color="blue" onClick={() => setAssignModalOpen(true)}>
+                  👤 Assign Selected
+                </Button>
+              )}
+
+              {isStaff && (
+                <Button color="red" onClick={() => handleDiscard()}>
+                  🗑 Discard Selected
+                </Button>
+              )}
+
+              {!isStaff && selectedTab === "assigned" && (
+                <Button color="yellow" onClick={handleStartSelected}>
+                  ▶️ Start Selected
+                </Button>
+              )}
+
+              {!isStaff && selectedTab === "in_progress" && (
+                <Button color="green" onClick={() => handleDone()}>
                   ✅ Complete Selected
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
+          )}
+
 
           {/* Cards grid */}
           {loading ? (
@@ -620,9 +628,6 @@ export default function TaskAssigningPage() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>
-        <Icon name="tasks" /> Tasks
-      </h2>
       <Tab
         panes={panes}
         onTabChange={(_, data) => {
@@ -632,6 +637,26 @@ export default function TaskAssigningPage() {
       />
       {isStaff && AssignModal}
       {isStaff && EditLabelModal}
+
+      {/* ✅ Add this block here: */}
+      {selectedTaskForPopup && (
+        <PopupWindow
+          marker={selectedTaskForPopup}
+          onClose={() => setSelectedTaskForPopup(null)}
+          onVerify={handleVerify}
+          onAssign={() => {
+            setSelectedIds([selectedTaskForPopup.id]);
+            setAssignModalOpen(true);
+            setSelectedTaskForPopup(null);
+          }}
+          onDiscard={handleDiscard}
+          onStart={() => markAsStarted(selectedTaskForPopup.id)}
+          onComplete={() => handleDone(selectedTaskForPopup.id)}
+          isStaff={isStaff}
+          isDash={false}
+        />
+      )}
     </div>
   );
+
 }

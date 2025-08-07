@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
-from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, UserRole, VerificationStatus, ProgressStatus
+from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, UserRole, Status
 from datetime import datetime, timezone
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
@@ -31,8 +31,7 @@ def get_assigned_tasks():
                 "task_id": task.id,
                 "metadata_id": metadata.id,
                 "worker_id": task.worker_id,
-                "verification_status": task.verification_status.name,
-                "progress_status": task.progress_status.name,
+                "status": task.status.name,
                 "notes": task.notes,
                 "scheduled_time": task.scheduled_time.isoformat() if task.scheduled_time else None,
                 "created_at": task.created_at.isoformat() if task.created_at else None,
@@ -99,11 +98,11 @@ def start_assigned_tasks():
         already_in_progress = []
 
         for task in tasks:
-            if task.progress_status == ProgressStatus.in_progress:
+            if task.status == Status.in_progress:
                 already_in_progress.append(task.id)
                 continue
 
-            task.progress_status = ProgressStatus.in_progress
+            task.status = Status.in_progress
             task.updated_at = datetime.now(timezone.utc)
             updated_tasks.append(task.id)
 
@@ -142,11 +141,11 @@ def complete_started_tasks():
         already_completed = []
 
         for task in tasks:
-            if task.progress_status == ProgressStatus.completed:
+            if task.status == Status.completed:
                 already_completed.append(task.id)
                 continue
 
-            task.progress_status = ProgressStatus.completed
+            task.status = Status.completed
             task.updated_at = datetime.now(timezone.utc)
             updated_tasks.append(task.id)
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
-from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, UserRole, VerificationStatus, ProgressStatus
+from mysql_models import Task, DetectionEvent, DetectionImage, DetectionMetadata, User, UserRole, Status
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 staff_task_bp = Blueprint('staff_task', __name__)
@@ -14,8 +14,7 @@ def get_tasks():
     Query Parameters:
     - page (int): Page number (default: 1)
     - per_page (int): Items per page (default: 10)
-    - progress_status (str): Filter by task progress status
-    - verification_status (str): Filter by task verification status
+    - status (str): Filter by task status
     - worker_id (int): Filter by assigned worker
     - sort (str): Sort field ('created_at', 'updated_at', 'scheduled_time')
     - order (str): Sort order ('asc' or 'desc')
@@ -30,8 +29,7 @@ def get_tasks():
     per_page = request.args.get('per_page', default=10, type=int)
 
     # Filter parameters
-    progress_status = request.args.get('progress_status')  
-    verification_status = request.args.get('verification_status') 
+    status = request.args.get('status')
     worker_id = request.args.get('worker_id', type=int)
     
     #sort and order
@@ -49,17 +47,11 @@ def get_tasks():
     #filter option lists
     filters = []
 
-    if verification_status:
+    if status:
         try:
-            filters.append(Task.verification_status == VerificationStatus[verification_status])
+            filters.append(Task.status == Status[status])
         except KeyError:
-            return jsonify({"error": f"Invalid status: {verification_status}"}), 400
-        
-    if progress_status:
-        try:
-            filters.append(Task.progress_status == ProgressStatus[progress_status])
-        except KeyError:
-            return jsonify({"error": f"Invalid status: {progress_status}"}), 400
+            return jsonify({"error": f"Invalid status: {status}"}), 400
 
     if worker_id is not None:
         filters.append(Task.worker_id == worker_id)
@@ -96,8 +88,7 @@ def get_tasks():
 
         return {
             "task_id": task.id,
-            "verification_status": task.verification_status.value,
-            "progress_status": task.progress_status.value,
+            "status": task.status.value,
             "notes": task.notes,
             "scheduled_time": task.scheduled_time.isoformat() if task.scheduled_time else None,
             "created_at": task.created_at.isoformat(),
@@ -133,7 +124,8 @@ def get_tasks():
                 "Y2_loc": metadata.Y2_loc,
                 "label": metadata.label,
                 "score": metadata.score,
-                "type": metadata.type.value
+                "type": metadata.type.value,
+                "caption": metadata.caption
             }
         }
             
@@ -157,8 +149,7 @@ def modify_task(task_id):
     - task_id (int): ID of the task to update
 
     JSON Body (at least one of the following):
-    - verification_status (str): New verification status
-    - progress_status (str): New progress status
+    - status (str): New status
     - worker_id (int): New worker ID
 
     Returns:
@@ -176,18 +167,11 @@ def modify_task(task_id):
         return jsonify({"error": f"Task with id {task_id} not found"}), 404
 
     # Update allowed fields
-    if "verification_status" in data:
+    if "status" in data:
         try:
-            task.verification_status = VerificationStatus[data["verification_status"]]
+            task.status = Status[data["status"]]
         except KeyError:
-            return jsonify({"error": f"Invalid verification_status: {data['verification_status']}"}), 400
-    
-        # Update allowed fields
-    if "progress_status" in data:
-        try:
-            task.progress_status = VerificationStatus[data["progress_status"]]
-        except KeyError:
-            return jsonify({"error": f"Invalid progress_status: {data['progress_status']}"}), 400
+            return jsonify({"error": f"Invalid status: {data['status']}"}), 400
 
     if "worker_id" in data:
         # Optional: validate if the user exists
@@ -209,8 +193,7 @@ def modify_multiple_tasks():
     [
         {
             "task_id": int,                       # Required
-            "verification_status": str,           # Optional
-            "progress_status": str,               # Optional
+            "status": str,                        # Optional
             "worker_id": int                      # Optional
         },
         ...
@@ -241,21 +224,11 @@ def modify_multiple_tasks():
             results.append(result)
             continue
 
-        # Process verification_status
-        if "verification_status" in item:
+        if "status" in item:
             try:
-                task.verification_status = VerificationStatus[item["verification_status"]]
+                task.status = Status[item["status"]]
             except KeyError:
-                result["error"] = f"Invalid verification_status: {item['verification_status']}"
-                results.append(result)
-                continue
-
-        # Process progress_status
-        if "progress_status" in item:
-            try:
-                task.progress_status = ProgressStatus[item["progress_status"]]  # Fixed typo
-            except KeyError:
-                result["error"] = f"Invalid progress_status: {item['progress_status']}"
+                result["error"] = f"Invalid status: {item['status']}"
                 results.append(result)
                 continue
 

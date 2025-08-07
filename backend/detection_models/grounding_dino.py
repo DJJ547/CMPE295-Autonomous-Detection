@@ -37,7 +37,7 @@ def generate_caption(crop_img):
         ids = blip_model.generate(**inputs)
     return blip_processor.decode(ids[0], skip_special_tokens=True)
 
-def check_alignment(label, caption, ce_threshold=0.3):
+def check_alignment(label, caption, ce_threshold):
     """Check if BLIP caption aligns with label using CrossEncoder."""
     score = cross_encoder.predict([(label, caption)])[0]
     print(f"CE Alignment: label={label}, caption='{caption}', score={score:.3f}")
@@ -47,7 +47,7 @@ def check_alignment(label, caption, ce_threshold=0.3):
 # ===== Main Function =====
 def detect_objects(image_path: str,
                    text_labels: List[str],
-                   threshold: float = 0.4,
+                   threshold: float = 0.35,
                    text_threshold: float = 0.3,
                    allowed_keywords: List[str] = None,
                    ce_threshold: float = 0.05,

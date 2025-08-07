@@ -34,7 +34,7 @@ export default function Sidebar() {
       <Menu vertical fluid secondary>
         <Menu.Item
           active={isActive("/")}
-          onClick={go(`/${user.id}`)}
+          onClick={go(`/dashboard`)}
           style={{ marginBottom: "2.5rem" }}
         >
           <Icon name="dashboard" size="large" />
@@ -43,7 +43,7 @@ export default function Sidebar() {
 
         <Menu.Item
           active={isActive("/analytics")}
-          onClick={go(`/analytics/${user.id}`)}
+          onClick={go(`/analytics`)}
           style={{ marginBottom: "2.5rem" }}
         >
           <Icon name="chart bar" size="large" />

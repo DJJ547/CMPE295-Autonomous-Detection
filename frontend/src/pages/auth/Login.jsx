@@ -46,8 +46,8 @@ export default function Login() {
 
       const data = await response.json();
 
-      login(data); // ✅ context handles setting user and localStorage
-      navigate(`/${data.id}`); // ✅ redirect to user-specific route
+      login(data);
+      navigate(`/dashboard`);
     } catch (error) {
       setPopupMessage({ message: error.message, type: "error" });
       console.error("Login error:", error);

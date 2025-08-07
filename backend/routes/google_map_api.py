@@ -25,7 +25,8 @@ def get_anomalies():
                     "Y2_loc": metadata.Y2_loc,
                     "label": metadata.label,
                     "score": metadata.score,
-                    "type": metadata.type.value
+                    "type": metadata.type.value,
+                    "caption": metadata.caption
                 } for metadata in image.metadatas
             ]
             images.append({
