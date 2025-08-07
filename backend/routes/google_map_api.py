@@ -1,20 +1,21 @@
+# in your googlemap_bp file (e.g. googlemap.py)
 from flask import Blueprint, jsonify, request
 from extensions import db
 from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata, Task
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 
 googlemap_bp = Blueprint("googlemap", __name__)
 
 
 @googlemap_bp.route("/api/anomalies", methods=["GET"])
 def get_anomalies():
-
     events = DetectionEvent.query.options(
         joinedload(DetectionEvent.images).joinedload(DetectionImage.metadatas)
     ).all()
+
     markers = []
     for event in events:
-        # Construct a list of images and their metadata for the current event
         images = []
         for image in event.images:
             metadatas = [
@@ -40,7 +41,6 @@ def get_anomalies():
                 }
             )
 
-        # Add the event data along with images and metadata
         markers.append(
             {
                 "id": event.id,
@@ -64,20 +64,14 @@ def delete_event(event_id):
     if not event:
         return jsonify({"error": "Event not found"}), 404
 
-    # 1) Gather all metadata IDs under this event
-    metadata_ids = [
-        md.id
-        for img in event.images
-        for md in img.metadatas
-    ]
-    # 2) Delete any tasks pointing to those metadata IDs
+    metadata_ids = [md.id for img in event.images for md in img.metadatas]
     if metadata_ids:
-        Task.query.filter(Task.metadata_id.in_(metadata_ids)).delete(synchronize_session=False)
+        Task.query.filter(Task.metadata_id.in_(metadata_ids)).delete(
+            synchronize_session=False
+        )
 
-    # 3) Delete the event (cascade will remove images & metadata)
     db.session.delete(event)
     db.session.commit()
-
     return jsonify({"message": "Event and its related tasks deleted"}), 200
 
 
@@ -87,16 +81,14 @@ def delete_image(image_id):
     if not image:
         return jsonify({"error": "Image not found"}), 404
 
-    # 1) Gather metadata IDs under this image
     metadata_ids = [md.id for md in image.metadatas]
-    # 2) Delete tasks referencing those metadata IDs
     if metadata_ids:
-        Task.query.filter(Task.metadata_id.in_(metadata_ids)).delete(synchronize_session=False)
+        Task.query.filter(Task.metadata_id.in_(metadata_ids)).delete(
+            synchronize_session=False
+        )
 
-    # 3) Delete the image (cascade will remove its metadata)
     db.session.delete(image)
     db.session.commit()
-
     return jsonify({"message": "Image and its related tasks deleted"}), 200
 
 
@@ -106,11 +98,31 @@ def delete_metadata(metadata_id):
     if not metadata:
         return jsonify({"error": "Metadata not found"}), 404
 
-    # 1) Delete any tasks pointing to this metadata
     Task.query.filter_by(metadata_id=metadata_id).delete(synchronize_session=False)
-
-    # 2) Delete the metadata
     db.session.delete(metadata)
     db.session.commit()
-
     return jsonify({"message": "Metadata and its related tasks deleted"}), 200
+
+
+@googlemap_bp.route("/api/anomalies/stats", methods=["GET"])
+def anomalies_stats():
+    # 1) run the GROUP BY
+    results = (
+        db.session.query(DetectionMetadata.type, func.count(DetectionMetadata.id))
+        .group_by(DetectionMetadata.type)
+        .all()
+    )
+    # 2) key by the enum's .value (the string), not by the Enum member itself
+    counts = {enum_member.value: count for enum_member, count in results}
+
+    # 3) return, filling in missing categories with zero
+    return (
+        jsonify(
+            {
+                "road_damage": counts.get("road_damage", 0),
+                "graffiti": counts.get("graffiti", 0),
+                "tent": counts.get("tent", 0),
+            }
+        ),
+        200,
+    )

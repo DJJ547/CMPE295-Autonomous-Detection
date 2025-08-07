@@ -21,19 +21,19 @@ const InteractiveMap = ({
   isStaff,
 }) => {
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [lastClickedId, setLastClickedId]   = useState(null);
+  const [lastClickedId, setLastClickedId] = useState(null);
 
-  // keep popup in sync
+  // keep popup in sync: replace selectedMarker with the fresh object (or clear it)
   useEffect(() => {
     if (!selectedMarker) return;
     const updated = markers.find((m) => m.id === selectedMarker.id);
-    if (!updated) setSelectedMarker(null);
-  }, [markers, selectedMarker]);
+    setSelectedMarker(updated || null);
+  }, [markers]);
 
   // handle clicks on the map itself
-  const [step, setStep]       = useState(1);
+  const [step, setStep] = useState(1);
   const [startCoord, setStart] = useState(null);
-  const [endCoord, setEnd]     = useState(null);
+  const [endCoord, setEnd] = useState(null);
   const handleMapClick = (event) => {
     if (!coordSelect) return;
     const raw = event.detail.latLng;
@@ -63,8 +63,16 @@ const InteractiveMap = ({
         style={{ width: "100%", height: "100%" }}
         options={{
           styles: [
-            { featureType: "poi",    elementType: "all", stylers: [{ visibility: "off" }] },
-            { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+            {
+              featureType: "poi",
+              elementType: "all",
+              stylers: [{ visibility: "off" }],
+            },
+            {
+              featureType: "transit",
+              elementType: "all",
+              stylers: [{ visibility: "off" }],
+            },
           ],
         }}
       >
@@ -73,41 +81,42 @@ const InteractiveMap = ({
         )}
 
         {/* map through your markers, highlighting the one with lastClickedId */}
-        {Array.isArray(markers) && markers.map((marker) => {
-          const isActive = marker.id === lastClickedId;
-          const iconUrl  = isActive
-            ? "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-            : "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+        {Array.isArray(markers) &&
+          markers.map((marker) => {
+            const isActive = marker.id === lastClickedId;
+            const iconUrl = isActive
+              ? "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+              : "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
 
-          return (
-            <CustomMarker
-              key={marker.id}
-              position={{
-                lat: parseFloat(marker.latitude),
-                lng: parseFloat(marker.longitude),
-              }}
-              icon={{
-                url:        iconUrl,
-                // bump the size if you like:
-                scaledSize: isActive
-                  ? new window.google.maps.Size(40, 40)
-                  : new window.google.maps.Size(32, 32),
-              }}
-              // if your wrapper passes options through, you can also do:
-              options={{
-                zIndex:    isActive ? 1000 : 1,
-                animation: isActive
-                  ? window.google.maps.Animation.BOUNCE
-                  : undefined,
-              }}
-              info={marker}
-              onClick={() => {
-                setSelectedMarker(marker);
-                setLastClickedId(marker.id);
-              }}
-            />
-          );
-        })}
+            return (
+              <CustomMarker
+                key={marker.id}
+                position={{
+                  lat: parseFloat(marker.latitude),
+                  lng: parseFloat(marker.longitude),
+                }}
+                icon={{
+                  url: iconUrl,
+                  // bump the size if you like:
+                  scaledSize: isActive
+                    ? new window.google.maps.Size(40, 40)
+                    : new window.google.maps.Size(32, 32),
+                }}
+                // if your wrapper passes options through, you can also do:
+                options={{
+                  zIndex: isActive ? 1000 : 1,
+                  animation: isActive
+                    ? window.google.maps.Animation.BOUNCE
+                    : undefined,
+                }}
+                info={marker}
+                onClick={() => {
+                  setSelectedMarker(marker);
+                  setLastClickedId(marker.id);
+                }}
+              />
+            );
+          })}
 
         {startCoord && (
           <Marker
@@ -122,9 +131,9 @@ const InteractiveMap = ({
           <Marker
             position={endCoord}
             icon={{
-              url:           "/finish-flag.png",
-              scaledSize:    new window.google.maps.Size(30, 30),
-              anchor:        new window.google.maps.Point(0, 30),
+              url: "/finish-flag.png",
+              scaledSize: new window.google.maps.Size(30, 30),
+              anchor: new window.google.maps.Point(0, 30),
             }}
             title={`End: ${endCoord.lat}, ${endCoord.lng}`}
           />
@@ -136,7 +145,10 @@ const InteractiveMap = ({
             <PopupWindow
               marker={selectedMarker}
               onClose={() => setSelectedMarker(null)}
-              onDeleteEvent={onDeleteEvent}
+              onDeleteEvent={(id) => {
+                onDeleteEvent(id);
+                // parent will refetch → markers updates → useEffect above fires
+              }}
               onDeleteImage={onDeleteImage}
               onDeleteMetadata={onDeleteMetadata}
               isDash={true}

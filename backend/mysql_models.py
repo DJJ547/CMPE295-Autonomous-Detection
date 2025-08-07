@@ -69,7 +69,6 @@ class DetectionType(enum.Enum):
     tent = "tent"
     graffiti = "graffiti"
     road_damage = "road_damage"
-    trash = "trash"
 
 
 class DetectionMetadata(db.Model):
