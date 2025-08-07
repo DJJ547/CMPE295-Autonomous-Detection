@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 import CustomMarker from "./customMarker";
-import CarMarker    from "./carMarker";
-import PopupWindow  from "./PopupWindow";
+import CarMarker from "./carMarker";
+import PopupWindow from "./PopupWindow";
 
 const center = { lat: 37.7749, lng: -122.4194 };
 
@@ -18,7 +18,7 @@ const InteractiveMap = ({
   onDeleteEvent,
   onDeleteImage,
   onDeleteMetadata,
-  isStaff
+  isStaff,
 }) => {
   const [selectedMarker, setSelectedMarker] = useState(null);
 
@@ -35,15 +35,18 @@ const InteractiveMap = ({
   }, [markers, selectedMarker]);
 
   // For coordinate selection on clicks
-  const [step, setStep]       = useState(1);
+  const [step, setStep] = useState(1);
   const [startCoord, setStart] = useState(null);
-  const [endCoord, setEnd]     = useState(null);
+  const [endCoord, setEnd] = useState(null);
 
   const handleMapClick = (event) => {
     if (!coordSelect) return;
-    // event.detail.latLng is a google.maps.LatLng
-    const lat = event.detail.latLng.lat();
-    const lng = event.detail.latLng.lng();
+
+    const raw = event.detail.latLng;
+
+    // support both .lat()/.lng() and .lat/.lng
+    const lat = typeof raw.lat === "function" ? raw.lat() : raw.lat;
+    const lng = typeof raw.lng === "function" ? raw.lng() : raw.lng;
 
     if (step === 1) {
       setStart({ lat, lng });
@@ -69,8 +72,16 @@ const InteractiveMap = ({
         style={{ width: "100%", height: "100%" }}
         options={{
           styles: [
-            { featureType: "poi",     elementType: "all", stylers: [{ visibility: "off" }] },
-            { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+            {
+              featureType: "poi",
+              elementType: "all",
+              stylers: [{ visibility: "off" }],
+            },
+            {
+              featureType: "transit",
+              elementType: "all",
+              stylers: [{ visibility: "off" }],
+            },
           ],
         }}
       >
@@ -86,7 +97,9 @@ const InteractiveMap = ({
                 lat: parseFloat(marker.latitude),
                 lng: parseFloat(marker.longitude),
               }}
-              icon={{ url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png" }}
+              icon={{
+                url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+              }}
               info={marker}
               onClick={() => setSelectedMarker(marker)}
             />
@@ -95,7 +108,9 @@ const InteractiveMap = ({
         {startCoord && (
           <Marker
             position={startCoord}
-            icon={{ url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" }}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+            }}
             title={`Start: ${startCoord.lat}, ${startCoord.lng}`}
           />
         )}
@@ -105,7 +120,7 @@ const InteractiveMap = ({
             icon={{
               url: "/finish-flag.png",
               scaledSize: new window.google.maps.Size(30, 30),
-              anchor:     new window.google.maps.Point(0, 30),
+              anchor: new window.google.maps.Point(0, 30),
             }}
             title={`End: ${endCoord.lat}, ${endCoord.lng}`}
           />
