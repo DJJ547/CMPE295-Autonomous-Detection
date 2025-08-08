@@ -115,7 +115,7 @@ return (
         <select id="detection-type-select" value={selectedType} onChange={handleTypeChange}>
           <option value="all">All</option>
           <option value="graffiti">Graffiti</option>
-          <option value="road damage">Road Damage</option>
+          <option value="road_damage">Road Damage</option>
           <option value="tent">Tent</option>
         </select>
       </div>
