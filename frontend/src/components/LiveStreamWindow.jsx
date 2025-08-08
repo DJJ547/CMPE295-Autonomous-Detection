@@ -1,53 +1,39 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dropdown,
-  Tab,
-  Image,
-  Segment,
-  Input,
-  Form,
-  Button,
-  Icon,
-  Loader,
-  Modal,
-} from "semantic-ui-react";
-import CoordinateSelectMap from "./CoordinateSelectMap";
-
+import { Dropdown, Tab, Segment, Input, Form, Button, Icon, Loader } from "semantic-ui-react";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io(
-  process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000"
-);
+const socket = io(process.env.REACT_APP_SOCKET_BACKEND || "http://localhost:8000");
 
-const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
-  const [imageList, setImageList] = useState({
-    front: [],
-    back: [],
-    left: [],
-    right: [],
-  });
-
+const LiveStreamWindow = ({
+  setCarLat,
+  setCarLng,
+  startLatInput,
+  setStartLatInput,
+  startLngInput,
+  setStartLngInput,
+  endLatInput,
+  setEndLatInput,
+  endLngInput,
+  setEndLngInput,
+  coordSelect,
+  setCoordSelect
+}) => {
+  const [imageList, setImageList] = useState({ front: [], back: [], left: [], right: [] });
   const [imgDims, setImgDims] = useState({ width: 1, height: 1 });
-
   const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const [startLatInput, setStartLatInput] = useState("");
-  const [startLngInput, setStartLngInput] = useState("");
-  const [endLatInput, setEndLatInput] = useState("");
-  const [endLngInput, setEndLngInput] = useState("");
   const [numPoints, setNumPoints] = useState("");
   const [params, setParams] = useState(null);
+  const [selectedModel, setSelectedModel] = useState("dino");
 
-  const [selectedModel, setSelectedModel] = useState("GroundingDINO");
+  const directions = ["front", "back", "left", "right"];
 
-  const [coordmapOpen, setCoordMapOpen] = useState(false)
   const maxLen = Math.max(
     imageList.front.length,
     imageList.back.length,
@@ -55,50 +41,13 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     imageList.right.length
   );
 
-  const [coordSelectedCount, setCoordSelectedCount] = useState(0);
-
-  // useEffect(() => {
-  //   if (!params) return;
-
-  //   const fetchImages = async () => {
-  //     try {
-  //       const res = await axios.get(
-  //         `${process.env.REACT_APP_LOCALHOST}api/stream`,
-  //         {
-  //           params: {
-  //             userId: localStorage.getItem("user_id"),
-  //             startLatInput: params.startLatInput,
-  //             startLngInput: params.startLngInput,
-  //             endLatInput: params.endLatInput,
-  //             endLngInput: params.endLngInput,
-  //             num_points: params.points,
-  //           },
-  //         }
-  //       );
-  //       console.log("S3 image URLs and coordinates:", res.data);
-  //       setImageList(res.data);
-  //       setCurrentIndex(0);
-  //       setLoading(false);
-  //       setIsPlaying(true);
-  //     } catch (error) {
-  //       console.error("Failed to fetch images:", error);
-  //     }
-  //   };
-
-  //   fetchImages();
-  // }, [params]);
-
+  // ✅ SOCKET STREAM LOGIC
   useEffect(() => {
     if (!params) return;
 
     setLoading(true);
-    setImageList({
-      front: [],
-      back: [],
-      left: [],
-      right: [],
-    });
-    console.log(localStorage.getItem("user_id"));
+    setImageList({ front: [], back: [], left: [], right: [] });
+
     socket.emit("start_stream", {
       userId: localStorage.getItem("user_id"),
       startLatInput: params.startLatInput,
@@ -113,47 +62,35 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
   useEffect(() => {
     socket.on("start_stream", (data) => {
       const { direction, ...imageData } = data;
-
       setImageList((prev) => ({
         ...prev,
         [direction]: [...prev[direction], imageData],
       }));
-
-      setLoading(false); // loading ends as soon as first image is received
+      setLoading(false);
       setIsPlaying(true);
     });
 
-    // cleanup on unmount
-    return () => {
-      socket.off("start_stream");
-    };
+    return () => socket.off("start_stream");
   }, []);
 
+  // ✅ PLAYBACK LOOP
   useEffect(() => {
     if (!isPlaying || maxLen === 0) return;
 
-    let isMounted = true;
-
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        if (prevIndex + 1 < maxLen) {
-          return prevIndex + 1;
-        } else {
-          setIsPlaying(false);
-          return prevIndex;
-        }
+      setCurrentIndex((prev) => {
+        if (prev + 1 < maxLen) return prev + 1;
+        setIsPlaying(false);
+        return prev;
       });
     }, 1500);
 
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [isPlaying, maxLen]);
 
+  // ✅ UPDATE CAR POSITION BASED ON STREAM IMAGE DATA
   useEffect(() => {
     if (!imageList || !directions[activeTabIndex]) return;
-
     const image = imageList[directions[activeTabIndex]]?.[currentIndex];
     if (image && image.lat !== undefined && image.lon !== undefined) {
       setCarLat?.(image.lat);
@@ -161,15 +98,9 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     }
   }, [currentIndex, activeTabIndex, imageList, setCarLat, setCarLng]);
 
+  // ✅ HANDLE STREAM SUBMIT
   const handleSubmit = () => {
-    if (
-      !startLatInput ||
-      !startLngInput ||
-      !endLatInput ||
-      !endLngInput ||
-      !numPoints
-    )
-      return;
+    if (!startLatInput || !startLngInput || !endLatInput || !endLngInput || !numPoints) return;
 
     setLoading(true);
     setCurrentIndex(0);
@@ -181,9 +112,13 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       points: numPoints,
       model: selectedModel,
     });
-    setModalOpen(false);
+
+    // 🔁 Reset coordSelect to false when submitting
+    setCoordSelect(false);
   };
 
+
+  // ✅ HANDLE IMAGE NAVIGATION
   const handlePrev = () => {
     setIsPlaying(false);
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
@@ -194,8 +129,7 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
     setCurrentIndex((prev) => Math.min(prev + 1, maxLen - 1));
   };
 
-  const directions = ["front", "back", "left", "right"];
-
+  // ✅ RENDER BOUNDING BOXES
   const renderBoundingBoxes = (boxes, labels = [], scores = []) => {
     const scaleX = imgDims.width / 640;
     const scaleY = imgDims.height / 640;
@@ -209,40 +143,23 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       const score = scores[idx] !== undefined ? scores[idx].toFixed(2) : "";
 
       return (
-        <div
-          key={idx}
-          style={{ position: "absolute", left, top, width, height, zIndex: 5 }}
-        >
-          {/* Label positioned above the bounding box */}
-          <div
-            style={{
-              position: "absolute",
-              top: "-14px", // move above the box
-              left: "0px",
-              color: "red",
-              fontSize: "10px",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-            }}
-          >
+        <div key={idx} style={{ position: "absolute", left, top, width, height, zIndex: 5 }}>
+          <div style={{
+            position: "absolute", top: "-14px", left: "0px", color: "red",
+            fontSize: "10px", fontWeight: 500, whiteSpace: "nowrap",
+          }}>
             {label} ({score})
           </div>
-
-          {/* Bounding box */}
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "2px solid red",
-              backgroundColor: "rgba(255, 0, 0, 0.2)",
-              position: "relative",
-            }}
-          />
+          <div style={{
+            width: "100%", height: "100%", border: "2px solid red",
+            backgroundColor: "rgba(255, 0, 0, 0.2)",
+          }} />
         </div>
       );
     });
   };
 
+  // ✅ IMAGE STREAM TABS
   const panes = directions.map((direction) => ({
     menuItem: direction.charAt(0).toUpperCase() + direction.slice(1),
     render: () => {
@@ -251,68 +168,21 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
       const boxes = imageData?.boxes || [];
 
       return (
-        <Tab.Pane
-          attached={false}
-          style={{ height: "100%", position: "relative" }}
-        >
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              position: "relative",
-            }}
-          >
+        <Tab.Pane attached={false} style={{ height: "100%", position: "relative" }}>
+          <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
             {loading ? (
               <Loader active inline="centered" size="huge" />
             ) : (
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
                 <img
                   src={imageUrl}
                   alt="Stream"
-                  onLoad={(e) => {
-                    setImgDims({
-                      width: e.target.offsetWidth,
-                      height: e.target.offsetHeight,
-                    });
-                  }}
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    objectFit: "contain",
-                    // position: "absolute",
-                    top: 0,
-                    left: 0,
-                  }}
+                  onLoad={(e) => setImgDims({ width: e.target.offsetWidth, height: e.target.offsetHeight })}
+                  style={{ width: "100%", height: "auto", objectFit: "contain" }}
                 />
-                {renderBoundingBoxes(
-                  boxes,
-                  imageData?.labels,
-                  imageData?.scores
-                )}
+                {renderBoundingBoxes(boxes, imageData?.labels, imageData?.scores)}
               </div>
             )}
-
-            <Button
-              icon
-              onClick={() => setFullscreenOpen(true)}
-              style={{
-                position: "absolute",
-                bottom: "1rem",
-                right: "1rem",
-                zIndex: 10,
-              }}
-            >
-              <Icon name="expand" />
-            </Button>
           </div>
         </Tab.Pane>
       );
@@ -321,220 +191,8 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Segment
-        raised
-        style={{ flex: 1, overflowY: "auto", position: "relative" }}
-      >
-        <Button
-          icon
-          labelPosition="left"
-          onClick={() => setModalOpen(true)}
-          style={{ marginBottom: "1rem" }}
-        >
-          <Icon name="settings" />
-          Show Stream Controls
-        </Button>
-
-        {/* <Modal open={coordmapOpen} onClose={() => setCoordMapOpen(false)} size="tiny">
-          <div style={{ textAlign: "center"}}>
-            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
-              <CoordinateSelectMap
-                startLat={startLatInput}
-                startLng={startLngInput}
-                endLat={endLatInput}
-                endLng={endLngInput}
-                setStartLatInput={setStartLatInput}
-                setStartLngInput={setStartLngInput}
-                setEndLatInput={setEndLatInput}
-                setEndLngInput={setEndLngInput}
-                onCoordinateSelected={() => {
-                  setCoordSelectedCount(prev => {
-                    const next = prev + 1;
-                    if (next >= 2) {
-                      setCoordMapOpen(false); // Auto-close after two selections
-                      return 0; // reset countF
-                    }
-                    return next;
-                  });
-                }}
-              />
-            </div>
-          </div>
-        </Modal> */}
-
-        <Modal open={modalOpen} onClose={() => setModalOpen(false)} size="tiny">
-
-          <Modal.Header>
-            Stream Controls
-            <Icon
-              name="close"
-              onClick={() => setModalOpen(false)}
-              style={{
-                float: "right",
-                cursor: "pointer",
-              }}
-            />
-          </Modal.Header>
-
-          <div style={{ textAlign: "center"}}>
-            <div style={{ position: 'relative', width: "100%", height: "500px", margin: "0 auto", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
-              <CoordinateSelectMap
-                startLat={startLatInput}
-                startLng={startLngInput}
-                endLat={endLatInput}
-                endLng={endLngInput}
-                setStartLatInput={setStartLatInput}
-                setStartLngInput={setStartLngInput}
-                setEndLatInput={setEndLatInput}
-                setEndLngInput={setEndLngInput}
-                onCoordinateSelected={() => {
-                  setCoordSelectedCount(prev => {
-                    const next = prev + 1;
-                    if (next >= 2) {
-                      setCoordMapOpen(false); // Auto-close after two selections
-                      return 0; // reset countF
-                    }
-                    return next;
-                  });
-                }}
-              />
-            </div>
-          </div>
-
-          <Modal.Content>
-            <Form onSubmit={handleSubmit}>
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="Start Latitude"
-                placeholder="e.g., 37.774900"
-                value={startLatInput}
-                onChange={(e) => setStartLatInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="Start Longitude"
-                placeholder="e.g., -122.419400"
-                value={startLngInput}
-                onChange={(e) => setStartLngInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="End Latitude"
-                placeholder="e.g., 37.804900"
-                value={endLatInput}
-                onChange={(e) => setEndLatInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                step="0.000001"
-                label="End Longitude"
-                placeholder="e.g., -122.271100"
-                value={endLngInput}
-                onChange={(e) => setEndLngInput(e.target.value)}
-              />
-              <Form.Field
-                control={Input}
-                type="number"
-                label="Number of Points"
-                placeholder="e.g., 10"
-                value={numPoints}
-                onChange={(e) => setNumPoints(e.target.value)}
-              />
-              {/* New Dropdown Field */}
-              <Form.Field>
-                <label>Detection Model</label>
-                <Dropdown
-                  placeholder="Select Model"
-                  fluid
-                  selection
-                  options={[
-                    {
-                      key: "dino",
-                      text: "GroundingDINO",
-                      value: "dino",
-                    },
-                    { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
-                    { key: "yolo", text: "YOLO-v8", value: "yolo" },
-                  ]}
-                  value={selectedModel}
-                  onChange={(e, { value }) => setSelectedModel(value)}
-                />
-              </Form.Field>
-              <Form.Field control={Button} content="Update Stream" primary />
-            </Form>
-          </Modal.Content>
-        </Modal>
-
-        <Modal
-          open={fullscreenOpen}
-          onClose={() => setFullscreenOpen(false)}
-          size="fullscreen"
-          closeIcon
-          style={{
-            maxWidth: "70vw",
-            margin: "0 auto",
-            height: "90vh",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Modal.Header>Expanded Stream View</Modal.Header>
-          <Modal.Content
-            style={{
-              backgroundColor: "#f9f9f9",
-              height: "100%",
-              padding: 0,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Tab
-              menu={{ pointing: true }}
-              panes={panes}
-              activeIndex={activeTabIndex}
-              onTabChange={(e, { activeIndex }) =>
-                setActiveTabIndex(activeIndex)
-              }
-            />
-            {maxLen > 0 && (
-              <Segment textAlign="center">
-                <Button
-                  icon
-                  labelPosition="left"
-                  onClick={handlePrev}
-                  disabled={currentIndex === 0}
-                >
-                  <Icon name="arrow left" />
-                  Previous
-                </Button>
-                <Button icon onClick={() => setIsPlaying(!isPlaying)}>
-                  <Icon name={isPlaying ? "pause" : "play"} />
-                </Button>
-                <Button
-                  icon
-                  labelPosition="right"
-                  onClick={handleNext}
-                  disabled={currentIndex === maxLen - 1}
-                >
-                  Next
-                  <Icon name="arrow right" />
-                </Button>
-                <p style={{ marginTop: "1em" }}>
-                  Viewing image <strong>{currentIndex + 1}</strong> of{" "}
-                  <strong>{maxLen}</strong>
-                </p>
-              </Segment>
-            )}
-          </Modal.Content>
-        </Modal>
-
+      <Segment raised style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+        {/* ✅ IMAGE TABS */}
         <Tab
           menu={{ pointing: true }}
           panes={panes}
@@ -544,33 +202,100 @@ const LiveStreamWindow = ({ setCarLat, setCarLng }) => {
 
         {maxLen > 0 && (
           <Segment textAlign="center">
-            <Button
-              icon
-              labelPosition="left"
-              onClick={handlePrev}
-              disabled={currentIndex === 0}
-            >
-              <Icon name="arrow left" />
-              Previous
+            <Button icon labelPosition="left" onClick={handlePrev} disabled={currentIndex === 0}>
+              <Icon name="arrow left" /> Previous
             </Button>
             <Button icon onClick={() => setIsPlaying(!isPlaying)}>
               <Icon name={isPlaying ? "pause" : "play"} />
             </Button>
-            <Button
-              icon
-              labelPosition="right"
-              onClick={handleNext}
-              disabled={currentIndex === maxLen - 1}
-            >
-              Next
-              <Icon name="arrow right" />
+            <Button icon labelPosition="right" onClick={handleNext} disabled={currentIndex === maxLen - 1}>
+              Next <Icon name="arrow right" />
             </Button>
             <p style={{ marginTop: "1em" }}>
-              Viewing image <strong>{currentIndex + 1}</strong> of{" "}
-              <strong>{maxLen}</strong>
+              Viewing image <strong>{currentIndex + 1}</strong> of <strong>{maxLen}</strong>
             </p>
           </Segment>
         )}
+
+        {/* ✅ STREAM SETTINGS FORM BELOW STREAM */}
+        <Segment>
+          <Form onSubmit={handleSubmit}>
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="Start Latitude"
+              value={startLatInput}
+              onChange={(e) => setStartLatInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="Start Longitude"
+              value={startLngInput}
+              onChange={(e) => setStartLngInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="End Latitude"
+              value={endLatInput}
+              onChange={(e) => setEndLatInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              step="0.000001"
+              label="End Longitude"
+              value={endLngInput}
+              onChange={(e) => setEndLngInput(e.target.value)}
+            />
+            <Form.Field
+              control={Input}
+              type="number"
+              label="Number of Points"
+              placeholder="e.g., 10"
+              value={numPoints}
+              onChange={(e) => setNumPoints(e.target.value)}
+            />
+            <Form.Field>
+              <label>Detection Model</label>
+              <Dropdown
+                placeholder="Select Model"
+                fluid
+                selection
+                options={[
+                  { key: "dino", text: "GroundingDINO", value: "dino" },
+                  { key: "owlvit", text: "OWL-ViT", value: "owlvit" },
+                  { key: "yolo", text: "YOLO-v8", value: "yolo" },
+                ]}
+                value={selectedModel}
+                onChange={(e, { value }) => setSelectedModel(value)}
+              />
+            </Form.Field>
+
+            {/* ✅ BUTTON ROW */}
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <Button primary type="submit">Update Stream</Button>
+              <Button
+                type="button"
+                color={coordSelect ? "red" : "red"}
+                basic={!coordSelect}   // ➡ Makes it lighter when OFF
+                onClick={() => setCoordSelect(!coordSelect)}
+                style={{
+                  fontWeight: "bold",
+                  border: coordSelect ? "2px solid #b91c1c" : "2px solid #ef4444",
+                  backgroundColor: coordSelect ? "#b91c1c" : "#ef4444",
+                  color: "white"
+                }}
+              >
+                {coordSelect ? "Marking ON" : "Mark Coor"}
+              </Button>
+            </div>
+          </Form>
+        </Segment>
       </Segment>
     </div>
   );

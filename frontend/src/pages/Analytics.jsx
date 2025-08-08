@@ -4,6 +4,10 @@ import ChatWindow from "../components/ChatWindow";
 import ChartSection from "./ChartSection";
 
 const Analytics = () => {
+  const storedRole = localStorage.getItem("role");
+  const storedId = parseInt(localStorage.getItem("user_id"), 10);
+  const isStaff = storedRole === "admin";
+
   return (
     <div
       style={{
@@ -65,6 +69,5 @@ const Analytics = () => {
     </div>
   );
 };
-
 
 export default Analytics;

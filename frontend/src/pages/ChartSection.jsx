@@ -62,9 +62,9 @@ const ChartSection = () => {
 
   return (
     <div style={{ padding: "2rem", background: "linear-gradient(to bottom, #eff6ff, white, #eff6ff)", minHeight: "100vh" }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: "bold", marginBottom: "2rem", textAlign: "center", color: "#1D4ED8", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+      {/* <h1 style={{ fontSize: "2.5rem", fontWeight: "bold", marginBottom: "2rem", textAlign: "center", color: "#1D4ED8", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
         Urban Maintenance Analytics
-      </h1>
+      </h1> */}
 
       {/* Controls */}
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1.5rem", marginBottom: "2rem" }}>

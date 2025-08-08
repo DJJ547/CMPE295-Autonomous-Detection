@@ -1,94 +1,113 @@
-import torch
-from PIL import Image
+import os, torch, time
 import numpy as np
+from PIL import Image
 from typing import List
 from transformers import (
     AutoProcessor, AutoModelForZeroShotObjectDetection,
-    BlipProcessor, BlipForConditionalGeneration,
-    CLIPProcessor, CLIPModel
+    BlipProcessor, BlipForConditionalGeneration
 )
-from config import Config
-
-# ===== Check CUDA availability =====
-if torch.cuda.is_available():
-    print(f"Using GPU: {torch.cuda.get_device_name(0)}")
-    device = torch.device("cuda")
-else:
-    print("CUDA not available, using CPU.")
-    device = torch.device("cpu")
-
-import torch.nn.functional as F
 from sentence_transformers import CrossEncoder
 
-# ========== Load Models ==========
-# Grounding DINO
+# ===== Device setup =====
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+# ===== Models (loaded once) =====
 dino_model_id = "IDEA-Research/grounding-dino-base"
 dino_processor = AutoProcessor.from_pretrained(dino_model_id, use_fast=True)
 dino_model = AutoModelForZeroShotObjectDetection.from_pretrained(dino_model_id).to(device)
+dino_model.eval()
 
-# BLIP
 blip_model_id = "Salesforce/blip-image-captioning-base"
 blip_processor = BlipProcessor.from_pretrained(blip_model_id, use_fast=True)
 blip_model = BlipForConditionalGeneration.from_pretrained(blip_model_id).to(device)
+blip_model.eval()
 
-print("Models loaded: DINO, BLIP, STSB-RoBERTa")
+ce_model = "cross-encoder/stsb-roberta-base"
+cross_encoder = CrossEncoder(ce_model)
 
-cross_encoder = CrossEncoder('cross-encoder/stsb-roberta-base')
+# ===== Helpers =====
+def tolist(x):
+    return x if isinstance(x, list) else x.cpu().tolist()
 
-def check_alignment(label: str, caption: str, threshold=0.4):
+def generate_caption(crop_img):
+    """Generate BLIP caption for the cropped region."""
+    inputs = blip_processor(images=crop_img, return_tensors="pt").to(device)
+    with torch.no_grad():
+        ids = blip_model.generate(**inputs)
+    return blip_processor.decode(ids[0], skip_special_tokens=True)
+
+def check_alignment(label, caption, ce_threshold):
+    """Check if BLIP caption aligns with label using CrossEncoder."""
     score = cross_encoder.predict([(label, caption)])[0]
-    print(f"Cross-Encoder score: {score:.3f}")
-    return score > threshold
+    print(f"CE Alignment: label={label}, caption='{caption}', score={score:.3f}")
+    return score >= ce_threshold, score
 
 
-# ========== Main Detection Function ==========
+# ===== Main Function =====
 def detect_objects(image_path: str,
                    text_labels: List[str],
                    threshold: float = 0.35,
-                   text_threshold: float = 0.35,
-                   allowed_keywords: List[str] = Config.ALLOWED_KEYWORDS):
-    
+                   text_threshold: float = 0.3,
+                   allowed_keywords: List[str] = None,
+                   ce_threshold: float = 0.05,
+                   pad_pct: float = 0.2):
+    """
+    Detect objects in an image using GroundingDINO + BLIP + CrossEncoder alignment.
+
+    Returns:
+        detected (bool): True if at least one detection passed CE filter.
+        filtered_output (list): List of dicts {box, label, score, caption}.
+    """
+    if allowed_keywords is None:
+        allowed_keywords = text_labels  # fallback: only use given labels
+
     image = Image.open(image_path).convert("RGB")
+    w, h = image.size
 
-    # Grounding DINO Detection
+    # ===== Run GroundingDINO =====
     inputs = dino_processor(images=image, text=text_labels, return_tensors="pt").to(device)
-    outputs = dino_model(**inputs)
-    target_size = torch.tensor([image.size[::-1]]).to(device)
-
+    with torch.no_grad():
+        outputs = dino_model(**inputs)
     results = dino_processor.post_process_grounded_object_detection(
-        outputs=outputs,
-        input_ids=inputs["input_ids"],
-        target_sizes=target_size,
-        threshold=threshold,
-        text_threshold=text_threshold
+        outputs,
+        inputs.input_ids,
+        box_threshold=threshold,
+        text_threshold=text_threshold,
+        target_sizes=[(h, w)]
     )[0]
 
-    boxes, labels, scores = results.get("boxes", []), results.get("labels", []), results.get("scores", [])
+    boxes = tolist(results.get("boxes", []))
+    labels = results.get("labels", [])
+    scores = tolist(results.get("scores", []))
 
     filtered_output = []
-    if boxes is not None:
-        for box, label, score in zip(boxes, labels, scores):
-            if any(keyword in label.lower() for keyword in allowed_keywords):
-                x1, y1, x2, y2 = map(int, box)
 
-                # BLIP Captioning
-                object_crop = image.crop((x1, y1, x2, y2))
-                blip_inputs = blip_processor(images=object_crop, return_tensors="pt").to(device)
-                caption = blip_model.generate(**blip_inputs)
-                caption_text = blip_processor.decode(caption[0], skip_special_tokens=True)
-                print("label:", label)
-                print("caption_text:", caption_text)
+    # ===== Filter detections =====
+    for box, label, score in zip(boxes, labels, scores):
+        if not any(keyword in label.lower() for keyword in allowed_keywords):
+            continue
 
-                # CLIP Alignment Check
-                is_aligned = check_alignment(label, caption_text)  # now uses CLIP under the hood
+        # Expand crop for BLIP caption
+        x1, y1, x2, y2 = map(int, box)
+        bw, bh = x2 - x1, y2 - y1
+        px, py = int(bw * pad_pct), int(bh * pad_pct)
+        nx1, ny1 = max(0, x1 - px), max(0, y1 - py)
+        nx2, ny2 = min(w, x2 + px), min(h, y2 + py)
+        crop = image.crop((nx1, ny1, nx2, ny2))
 
-                if is_aligned:
-                    filtered_output.append({
-                        "box": [x1, y1, x2, y2],
-                        "label": label,
-                        "score": float(score),
-                        "caption": caption_text
-                    })
+        # Caption & CE Alignment
+        caption = generate_caption(crop)
+        aligned, ce_score = check_alignment(label, caption, ce_threshold)
+
+        if aligned:
+            filtered_output.append({
+                "box": [x1, y1, x2, y2],
+                "label": label,
+                "score": float(score),
+                "caption": caption,
+                "ce_score": float(ce_score)
+            })
 
     detected = len(filtered_output) > 0
     return detected, filtered_output

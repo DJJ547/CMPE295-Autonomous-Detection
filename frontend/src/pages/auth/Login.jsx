@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/auth";
 import {
   Container,
   Form,
@@ -6,13 +8,15 @@ import {
   Button,
   Header,
   Segment,
-  Image,
   Message,
 } from "semantic-ui-react";
 // import LoginIcon from "../../medias/auth/authIcon.png";
 import PopupMessage from "../../components/PopupMessage";
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth(); // ✅ use login method from context
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,31 +31,27 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    fetch(`${process.env.REACT_APP_LOCALHOST}auth/login/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Login failed");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        localStorage.setItem("user_id", data.id)
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("email", data.email);
-        localStorage.setItem("firstname", data.firstname);
-        localStorage.setItem("lastname", data.lastname);
-        window.location.href = "/";
-      })
-      .catch((error) => {
-        setPopupMessage({ message: error.message, type: "error" });
-        console.error("Login error:", error);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_LOCALHOST}auth/login/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       });
+
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const data = await response.json();
+
+      login(data);
+      navigate(`/dashboard`);
+    } catch (error) {
+      setPopupMessage({ message: error.message, type: "error" });
+      console.error("Login error:", error);
+    }
   };
 
   return (

@@ -9,10 +9,13 @@ import boto3
 
 from extensions import socketio
 from flask_socketio import emit
-from detection_models import grounding_dino, owlvit, yolo
+from detection_models import grounding_dino, owlvit, combined_yolos
 from utils import mysql_db_utils
 from datetime import datetime
 from config import Config
+
+# Load environment variables
+load_dotenv()
 
 text_labels = Config.LABELS
 
@@ -27,19 +30,10 @@ def generate_coordinates(startLat, startLng, endLat, endLng, num_points):
 def upload_file_to_s3(local_path, bucket_name, s3_root_folder_name):
     """
     Upload a single file to AWS S3 and return the URL of the uploaded file.
-
-    Parameters:
-        local_path (str): Path to the local file.
-        bucket_name (str): S3 bucket name.
-        s3_key_prefix (str): Destination folder/key prefix in the S3 bucket.
-
-    Returns:
-        str: URL of the uploaded file.
     """
     s3 = boto3.client("s3")
     filename = os.path.basename(local_path)
 
-    # Ensure the prefix ends with '/' and append the filename
     if s3_root_folder_name and not s3_root_folder_name.endswith("/"):
         s3_root_folder_name += "/"
 
@@ -56,26 +50,16 @@ def upload_file_to_s3(local_path, bucket_name, s3_root_folder_name):
 
 
 def delete_s3_folder(bucket_name, folder_prefix):
-    """
-    Deletes all objects under a folder prefix in the given S3 bucket to avoid overhead.
-    """
+    """Deletes all objects under a folder prefix in the given S3 bucket to avoid overhead."""
     s3 = boto3.client("s3")
     try:
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder_prefix)
         if 'Contents' in response:
-            objects_to_delete = [{'Key': obj['Key']}
-                                 for obj in response['Contents']]
-            s3.delete_objects(Bucket=bucket_name, Delete={
-                              'Objects': objects_to_delete})
-            print(
-                f"Deleted {len(objects_to_delete)} objects from {folder_prefix}")
+            objects_to_delete = [{'Key': obj['Key']} for obj in response['Contents']]
+            s3.delete_objects(Bucket=bucket_name, Delete={'Objects': objects_to_delete})
+            print(f"Deleted {len(objects_to_delete)} objects from {folder_prefix}")
     except Exception as e:
         print(f"Error deleting S3 folder {folder_prefix}: {e}")
-
-# Sample coordinates to try
-# start_coord = (37.785215, -122.417924)
-# end_coord = (37.785821, -122.412989)
-# num_points = 35
 
 
 @socketio.on('start_stream')
@@ -89,8 +73,7 @@ def stream_all_images(data):
     num_points = int(data.get('num_points'))
     model = str(data.get('model'))
 
-    coords = generate_coordinates(
-        startLat, startLng, endLat, endLng, num_points)
+    coords = generate_coordinates(startLat, startLng, endLat, endLng, num_points)
 
     api_key = os.getenv("GOOGLE_API_KEY")
     print(f"API Key loaded: {'Yes' if api_key else 'No'}")
@@ -101,158 +84,144 @@ def stream_all_images(data):
     s3_detected_root_folder_name = 'detected-images'
     delete_s3_folder(bucket_name, s3_stream_root_folder_name)
 
-    # size       : Image resolution (max: 640x640)
-
-    # fov        : Field of view (zoom level)
-    #              - Range: 10 to 120
-    #              - 120 = wide view (more surroundings)
-    #              - 90  = standard view
-    #              - 30  = zoomed-in view
-
-    # heading    : Camera direction (in degrees)
-    #              - 0   = North
-    #              - 90  = East
-    #              - 180 = South
-    #              - 270 = West
-
-    # pitch      : Camera vertical tilt
-    #              - Range: -90 to 90
-    #              -  0   = level (straight ahead)
-    #              - 90  = pointing straight up
-    #              - -90 = pointing straight down
     size = "640x640"
     fov = 90
     pitch = 0
+    headings = {"front": 90, "right": 180, "back": 270, "left": 360}
 
-    headings = {
-        "front": 90,
-        "right": 180,
-        "back": 270,
-        "left": 360
-    }
-
-    if not os.path.exists(stream_temp_dir):
-        os.makedirs(stream_temp_dir)
-    if not os.path.exists(detected_temp_dir):
-        os.makedirs(detected_temp_dir)
+    os.makedirs(stream_temp_dir, exist_ok=True)
+    os.makedirs(detected_temp_dir, exist_ok=True)
 
     for idx, (lat, lon) in enumerate(coords):
         for direction, heading in headings.items():
-            params = {
-                    "latlng": f"{lat},{lon}", 
-                    "key": api_key
-                }
-            response = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params=params) #retrieve address based on coordinate
-            address = {
-                'formatted_address': "",
-                'street': "",
-                'city': "",
-                'state': "",
-                'zipcode': "",
-            }
-            if response.status_code == 200:
-                data = response.json()
-                if data['status'] == "OK" and len(data.get('results', [])) > 0:
+            # --- Geocode request with detailed logging ---
+            geocode_url = "https://maps.googleapis.com/maps/api/geocode/json"
+            params = {"latlng": f"{lat},{lon}", "key": api_key}
+            try:
+                response = requests.get(geocode_url, params=params, timeout=10)
+            except Exception as e:
+                print(f"[GEOCODE ERROR] Exception for ({lat}, {lon}): {e}")
+                response = None
+
+            address = {'formatted_address': "", 'street': "", 'city': "", 'state': "", 'zipcode': ""}
+            if response and response.status_code == 200:
+                data_json = response.json()
+                if data_json.get('status') == "OK" and data_json.get('results'):
                     try:
-                        # Extract the first result
-                        result = data['results'][0]
-
-                        # Get the formatted address
+                        result = data_json['results'][0]
                         address["formatted_address"] = result.get('formatted_address', 'Unknown')
-
-                        # Initialize variables for components
                         street_number = street_name = ""
-
-                        # Iterate over address components to find desired fields
-                        for component in result.get('address_components', []):
-                            types = component.get('types', [])
+                        for comp in result.get('address_components', []):
+                            types = comp.get('types', [])
                             if "street_number" in types:
-                                street_number = component.get('long_name', '')
+                                street_number = comp.get('long_name', '')
                             if "route" in types:
-                                street_name = component.get('long_name', '')
+                                street_name = comp.get('long_name', '')
                                 address["street"] = f"{street_number} {street_name}".strip()
                             if "locality" in types:
-                                address["city"] = component.get('long_name', 'Unknown')
+                                address["city"] = comp.get('long_name', 'Unknown')
                             if "administrative_area_level_1" in types:
-                                address["state"] = component.get('short_name', 'Unknown')
+                                address["state"] = comp.get('short_name', 'Unknown')
                             if "postal_code" in types:
-                                address["zipcode"] = component.get('long_name', 'Unknown')
-
-                        #print("Extracted Address Information:", address)
-
+                                address["zipcode"] = comp.get('long_name', 'Unknown')
                     except (IndexError, KeyError) as e:
                         print("Error parsing response:", str(e))
                 else:
-                    print("Failed to retrieve address for coordinate: ", lat, lon)
+                    print(
+                        f"[GEOCODE FAIL] coord=({lat},{lon}) HTTP={response.status_code} "
+                        f"status={data_json.get('status')} results={len(data_json.get('results', []))} "
+                        f"URL={response.url}"
+                    )
             else:
-                print("Failed to retrieve address for coordinate: ", lat, lon)
-            
-            params = {
-                "size": size,
-                "fov": fov,
-                "heading": heading,
-                "pitch": pitch,
-                "key": api_key,
-                "location": f"{lat},{lon}"
-            }
+                code = response.status_code if response else "no-response"
+                body = response.text if response else "—"
+                print(
+                    f"[GEOCODE HTTP ERROR] coord=({lat},{lon}) HTTP={code} body={body}"
+                )
 
-            response = requests.get(
-                "https://maps.googleapis.com/maps/api/streetview", params=params)
+            # --- Street View request with detailed logging ---
+            streetview_url = "https://maps.googleapis.com/maps/api/streetview"
+            params = {"size": size, "fov": fov, "heading": heading, "pitch": pitch, "key": api_key, "location": f"{lat},{lon}"}
+            try:
+                response = requests.get(streetview_url, params=params, timeout=10)
+            except Exception as e:
+                print(f"[STREETVIEW ERROR] Exception for ({lat}, {lon}, {direction}): {e}")
+                response = None
 
-            if response.status_code == 200:
-                    
+            if response and response.status_code == 200:
                 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
                 image_name = f"{timestamp}_{idx + 1}.jpg"
-                stream_temp_local_path = os.path.join(
-                    stream_temp_dir, image_name)
+                stream_temp_local_path = os.path.join(stream_temp_dir, image_name)
 
+                # Step 1: Save the image from response
                 with open(stream_temp_local_path, "wb") as f:
                     f.write(response.content)
+
+                # Step 2: Mask the bottom-left area to remove Google watermark
+                img = cv2.imread(stream_temp_local_path)
+                if img is not None:
+                    h, w, _ = img.shape
+
+                    # Define the mask size (adjust if needed)
+                    mask_width = 640   # width of the masked area
+                    mask_height = 20   # height of the masked area
+
+                    # Coordinates: bottom-left corner
+                    x1 = 0
+                    y1 = h - mask_height
+                    x2 = x1 + mask_width
+                    y2 = h
+
+                    # Fill with black (0, 0, 0) or use white (255, 255, 255)
+                    cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 0), thickness=-1)
+
+                    # Save masked image back
+                    cv2.imwrite(stream_temp_local_path, img)
+                else:
+                    print(f"❌ Failed to load image for masking: {stream_temp_local_path}")
+
 
                 # Run selected detection model
                 try:
                     if model == 'dino':
-                        detected, output = grounding_dino.detect_objects(
-                            stream_temp_local_path, text_labels)
+                        detected, output = grounding_dino.detect_objects(stream_temp_local_path, text_labels)
                     elif model == 'owlvit':
-                        detected, output = owlvit.detect_objects(
-                            stream_temp_local_path, text_labels)
+                        detected, output = owlvit.detect_objects(stream_temp_local_path, text_labels)
                     elif model == 'yolo':
-                        detected, output = yolo.detect_objects(
-                            stream_temp_local_path, text_labels)
+                        detected, output = combined_yolos.detect_objects(stream_temp_local_path)
                     else:
-                        print(f"Unknown model type: {model}")
-                        detected, output = False, []
+                        raise ValueError(f"Unknown model: {model}")
 
                     handle_detection_result(
                         detected, output, image_name, response.content,
                         detected_temp_dir, bucket_name, s3_detected_root_folder_name,
                         lat, lon, address, direction
                     )
-
                 except Exception as e:
                     print(f"Detection failed on {image_name}: {e}")
                     detected, output = False, []
 
-
-                # Store images returned by Google Street View API into S3 folder named "user{user_id}-livestream"
+                # Upload stream image and emit
                 s3_stream_image_path = f"{s3_stream_root_folder_name}/{direction}/{image_name}"
-                s3_stream_image_url = upload_file_to_s3(
-                    stream_temp_local_path, bucket_name, s3_stream_image_path)
-                    
-                # Emit result immediately
+                s3_stream_image_url = upload_file_to_s3(stream_temp_local_path, bucket_name, s3_stream_image_path)
                 emit("start_stream", {
                     "direction": direction,
                     "url": s3_stream_image_url,
                     "lat": lat,
                     "lon": lon,
                     "detected": detected,
-                    "boxes": [detection["box"] for detection in output] if detected else [],
-                    "labels": [detection["label"] for detection in output] if detected else [],
-                    "scores": [detection["score"] for detection in output] if detected else []
+                    "boxes": [d["box"] for d in output] if detected else [],
+                    "labels": [d["label"] for d in output] if detected else [],
+                    "scores": [d["score"] for d in output] if detected else []
                 })
             else:
-                print(f"Failed to fetch {direction} image at coordinate ({lat}, {lon})")
+                code = response.status_code if response else "no-response"
+                body_snip = (response.text[:200] + "...") if response and response.text else "—"
+                print(
+                    f"[STREETVIEW FAIL] direction={direction} coord=({lat},{lon}) "
+                    f"HTTP={code} body={body_snip} URL={response.url if response else streetview_url}"
+                )
+
 
     # Test API key
     test_params = {
@@ -271,11 +240,16 @@ def handle_detection_result(
         detected_temp_local_path = os.path.join(detected_temp_dir, image_name)
         with open(detected_temp_local_path, "wb") as f:
             f.write(response_content)
+
         s3_detected_image_url = upload_file_to_s3(
             detected_temp_local_path, bucket_name, s3_detected_root_folder_name
         )
+
         if s3_detected_image_url:
+            # 🧠 Extract the first caption from detection output, if available
+            caption = output[0].get("caption") if output else None
+
+            # ✅ Add caption as new argument in DB insert function
             mysql_db_utils.register_anomaly_to_db(
-                lat, lon, address, direction, s3_detected_image_url, output
+                lat, lon, address, direction, s3_detected_image_url, output, caption
             )
-            

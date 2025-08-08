@@ -1,90 +1,160 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
-
 import CustomMarker from "./customMarker";
 import CarMarker from "./carMarker";
 import PopupWindow from "./PopupWindow";
-const center = {
-  lat: 37.7749, // Default to San Francisco
-  lng: -122.4194,
-};
 
-const InteractiveMap = ({ carLat, carLng, markers }) => {
-  const [position, setPosition] = useState(center);
+const center = { lat: 37.7749, lng: -122.4194 };
+
+const InteractiveMap = ({
+  carLat,
+  carLng,
+  markers,
+  coordSelect,
+  setStartLatInput,
+  setStartLngInput,
+  setEndLatInput,
+  setEndLngInput,
+  onDeleteEvent,
+  onDeleteImage,
+  onDeleteMetadata,
+  isStaff,
+}) => {
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [startCoord, setStartCoord] = useState(null);
-  const [endCoord, setEndCoord] = useState(null);
+  const [lastClickedId, setLastClickedId] = useState(null);
 
+  // keep popup in sync: replace selectedMarker with the fresh object (or clear it)
+  useEffect(() => {
+    if (!selectedMarker) return;
+    const updated = markers.find((m) => m.id === selectedMarker.id);
+    setSelectedMarker(updated || null);
+  }, [markers]);
 
-    // Handle marker click
-  const handleMarkerClick = (marker) => {
-    console.log(marker);
-    setSelectedMarker(marker);
+  // handle clicks on the map itself
+  const [step, setStep] = useState(1);
+  const [startCoord, setStart] = useState(null);
+  const [endCoord, setEnd] = useState(null);
+  const handleMapClick = (event) => {
+    if (!coordSelect) return;
+    const raw = event.detail.latLng;
+    const lat = typeof raw.lat === "function" ? raw.lat() : raw.lat;
+    const lng = typeof raw.lng === "function" ? raw.lng() : raw.lng;
+    if (step === 1) {
+      setStart({ lat, lng });
+      setStartLatInput(lat.toFixed(6));
+      setStartLngInput(lng.toFixed(6));
+      setStep(2);
+    } else {
+      setEnd({ lat, lng });
+      setEndLatInput(lat.toFixed(6));
+      setEndLngInput(lng.toFixed(6));
+      setStep(1);
+    }
   };
-
-  // Close the popup window
-  const closePopup = () => {
-    setSelectedMarker(null);
-  };
-
-
 
   return (
-    <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
+    <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <Map
-        defaultCenter={position}
+        defaultCenter={center}
         defaultZoom={14}
-        gestureHandling={"greedy"}
-        disableDefaultUI={true}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
+        onClick={handleMapClick}
+        style={{ width: "100%", height: "100%" }}
         options={{
           styles: [
-            // Hide all POIs (restaurants, shops, etc.)
             {
               featureType: "poi",
               elementType: "all",
-              stylers: [{ visibility: "off" }]
+              stylers: [{ visibility: "off" }],
             },
-            // Hide transit (bus, train, subway lines/stations)
             {
               featureType: "transit",
               elementType: "all",
-              stylers: [{ visibility: "off" }]
-            }
-          ]
+              stylers: [{ visibility: "off" }],
+            },
+          ],
         }}
       >
-        {carLat !== null && carLng !== null && (
+        {carLat != null && carLng != null && (
           <CarMarker position={{ lat: carLat, lng: carLng }} />
         )}
 
+        {/* map through your markers, highlighting the one with lastClickedId */}
         {Array.isArray(markers) &&
-          markers.map((marker, index) => (
-            <CustomMarker
-              key={index}
-              position={{
-                lat: parseFloat(marker.latitude), // Updated to "latitude"
-                lng: parseFloat(marker.longitude), // Updated to "longitude"
-              }}
-              icon={{
-                url: `http://maps.google.com/mapfiles/ms/icons/red-dot.png`,// Default to "red"
-              }}
-              info={{
-                id: marker.id,
-                timestamp: marker.timestamp,
-                street: marker.street || "Unknown",
-                city: marker.city || "Unknown",
-                state: marker.state || "Unknown",
-                zipcode: marker.zipcode || "Unknown",
-              }}
+          markers.map((marker) => {
+            const isActive = marker.id === lastClickedId;
+            const iconUrl = isActive
+              ? "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+              : "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
 
-              onClick={() => handleMarkerClick(marker)}
+            return (
+              <CustomMarker
+                key={marker.id}
+                position={{
+                  lat: parseFloat(marker.latitude),
+                  lng: parseFloat(marker.longitude),
+                }}
+                icon={{
+                  url: iconUrl,
+                  // bump the size if you like:
+                  scaledSize: isActive
+                    ? new window.google.maps.Size(40, 40)
+                    : new window.google.maps.Size(32, 32),
+                }}
+                // if your wrapper passes options through, you can also do:
+                options={{
+                  zIndex: isActive ? 1000 : 1,
+                  animation: isActive
+                    ? window.google.maps.Animation.BOUNCE
+                    : undefined,
+                }}
+                info={marker}
+                onClick={() => {
+                  setSelectedMarker(marker);
+                  setLastClickedId(marker.id);
+                }}
+              />
+            );
+          })}
 
-            />
-          ))}
+        {startCoord && (
+          <Marker
+            position={startCoord}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+            }}
+            title={`Start: ${startCoord.lat}, ${startCoord.lng}`}
+          />
+        )}
+        {endCoord && (
+          <Marker
+            position={endCoord}
+            icon={{
+              url: "/finish-flag.png",
+              scaledSize: new window.google.maps.Size(30, 30),
+              anchor: new window.google.maps.Point(0, 30),
+            }}
+            title={`End: ${endCoord.lat}, ${endCoord.lng}`}
+          />
+        )}
 
+        {/* your popup */}
         {selectedMarker && (
           <div style={{ position: "absolute", top: 0, left: 0 }}>
-          <PopupWindow marker={selectedMarker} onClose={closePopup} />
+            <PopupWindow
+              marker={selectedMarker}
+              onClose={() => setSelectedMarker(null)}
+              onDeleteEvent={(id) => {
+                onDeleteEvent(id);
+                // parent will refetch → markers updates → useEffect above fires
+              }}
+              onDeleteImage={onDeleteImage}
+              onDeleteMetadata={onDeleteMetadata}
+              isDash={true}
+              isStaff={isStaff}
+              // …plus any other props like onVerify, onAssign, etc.
+            />
           </div>
         )}
       </Map>

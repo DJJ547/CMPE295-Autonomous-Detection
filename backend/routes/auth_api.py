@@ -27,12 +27,14 @@ def login():
 
     if user:
         token = generate_jwt_token(user)
+        print(user.role)
         return jsonify({
             'id': user.id,
             'message': 'Login successful',
             'email': user.email,
             'firstname': user.first_name,
             'lastname': user.last_name,
+            'role': user.role.value,
             'token': token
         }), 200
     else:

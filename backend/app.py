@@ -3,6 +3,9 @@ from gevent import monkey
 monkey.patch_all()
 print("Gevent monkey patching done.")
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 from flask import Flask
 from flask_cors import CORS
 import os
@@ -24,20 +27,12 @@ from routes.graphs_api import graphs_bp
 from routes.heatmap_api import heatmap_bp
 from routes.google_map_api import googlemap_bp
 from routes.llm import llm_bp
+from routes.staff_task_api import staff_task_bp
+from routes.worker_task_api import worker_task_bp
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)  # centralized config class
-from routes.heatmap_api import heatmap_bp  # Import the heatmap blueprint
-
-from extensions import db, socketio, cors
-from routes.llm import llm_bp
-from routes.google_map_api import googlemap_bp
-
-
-# Initialize Flask app
-app = Flask(__name__)
-app.config.from_object(Config)  # 👈 central config loading
 
 # Additional Config
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -60,6 +55,8 @@ app.register_blueprint(graphs_bp)
 app.register_blueprint(googlemap_bp)
 app.register_blueprint(llm_bp)
 app.register_blueprint(heatmap_bp)
+app.register_blueprint(staff_task_bp)
+app.register_blueprint(worker_task_bp)
 
 # Register SocketIO events
 import routes.stream_socket  # this defines your socketio.on events
@@ -68,13 +65,6 @@ import routes.stream_socket  # this defines your socketio.on events
 @app.route("/")
 def index():
     return "Backend is running"
-
-# Run the app
-if __name__ == '__main__':
-    print("Starting backend on http://localhost:8000")
-
-# Register SocketIO events
-import routes.stream_socket
 
 # Run the app
 if __name__ == '__main__':
