@@ -291,7 +291,7 @@ const LiveStreamWindow = ({
                   color: "white"
                 }}
               >
-                {coordSelect ? "Marking ON" : "Mark Coor"}
+                {coordSelect ? "Setting..." : "Set Points"}
               </Button>
             </div>
           </Form>

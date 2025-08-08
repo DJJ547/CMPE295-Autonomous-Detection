@@ -23,35 +23,35 @@ const API_BASE = process.env.REACT_APP_LOCALHOST;
 
 const getColor = (status) => {
   switch (status) {
-    case "unverified":   return "grey";
-    case "verified":     return "blue";
-    case "assigned":     return "purple";
-    case "in_progress":  return "yellow";
-    case "completed":    return "green";
-    default:             return "teal";
+    case "unverified": return "grey";
+    case "verified": return "blue";
+    case "assigned": return "purple";
+    case "in_progress": return "yellow";
+    case "completed": return "green";
+    default: return "teal";
   }
 };
 
 export default function TaskAssigningPage() {
   const { user } = useAuth();
-  const isStaff     = user?.role === "admin";
-  const statusTabs  = isStaff
+  const isStaff = user?.role === "admin";
+  const statusTabs = isStaff
     ? ["unverified", "verified", "assigned", "in_progress", "completed", "discarded"]
     : ["assigned", "in_progress", "completed"];
 
   // UI state
-  const [tasks, setTasks]                       = useState([]);
-  const [totalPages, setTotalPages]             = useState(1);
-  const [currentPage, setCurrentPage]           = useState(1);
-  const itemsPerPage                            = 6;
-  const [selectedTab, setSelectedTab]           = useState(statusTabs[0]);
-  const [searchQuery, setSearchQuery]           = useState("");
-  const [selectedIds, setSelectedIds]           = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const [selectedTab, setSelectedTab] = useState(statusTabs[0]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
   const [selectedWorkerId, setSelectedWorkerId] = useState(null);
-  const [users, setUsers]                       = useState([]);
-  const [assignModalOpen, setAssignModalOpen]   = useState(false);
+  const [users, setUsers] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedTaskForPopup, setSelectedTaskForPopup] = useState(null);
-  const [loading, setLoading]                   = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Fetch tasks + workers on tab / page change
   useEffect(() => {
@@ -63,25 +63,25 @@ export default function TaskAssigningPage() {
   async function fetchTasks() {
     setLoading(true);
     try {
-      const url    = isStaff
+      const url = isStaff
         ? `${API_BASE}api/tasks`
         : `${API_BASE}api/getAssignedTasks`;
       const params = {
-        user_id:    user.id,
-        status:     selectedTab,
-        page:       currentPage,
-        per_page:   itemsPerPage,
+        user_id: user.id,
+        status: selectedTab,
+        page: currentPage,
+        per_page: itemsPerPage,
       };
       const resp = await axios.get(url, { params });
-      const data  = resp.data.tasks || [];
+      const data = resp.data.tasks || [];
       setTasks(
         data.map((e) => ({
-          id:        e.task_id,
-          image:     e.image_url,
-          metadata:  e.metadata || {},
-          title:     e.label,
-          status:    e.status,
-          location:  e.street || "",
+          id: e.task_id,
+          image: e.image_url,
+          metadata: e.metadata || {},
+          title: e.label,
+          status: e.status,
+          location: e.street || "",
           timestamp: e.created_at,
           ...e,
         }))
@@ -99,9 +99,9 @@ export default function TaskAssigningPage() {
       const resp = await axios.get(`${API_BASE}api/tasks/getWorkers`);
       setUsers(
         resp.data.map((u) => ({
-          key:   u.id,
+          key: u.id,
           value: u.id,
-          text:  `${u.firstName} ${u.lastName}`,
+          text: `${u.firstName} ${u.lastName}`,
         }))
       );
     } catch (err) {
@@ -115,13 +115,13 @@ export default function TaskAssigningPage() {
   }
   async function startTasks(ids) {
     await axios.post(`${API_BASE}api/startTasks`, {
-      user_id:  user.id,
+      user_id: user.id,
       task_ids: ids,
     });
   }
   async function completeTasks(ids) {
     await axios.post(`${API_BASE}api/completeTasks`, {
-      user_id:  user.id,
+      user_id: user.id,
       task_ids: ids,
     });
   }
@@ -152,12 +152,22 @@ export default function TaskAssigningPage() {
     const ids = id ? [id] : selectedIds;
     await updateTasks(
       ids.map((i) => ({
-        task_id:   i,
-        status:    "assigned",
+        task_id: i,
+        status: "assigned",
         worker_id: selectedWorkerId,
       }))
     );
     fetchTasks();
+  };
+
+  const handleBulkStart = async () => {
+    await startTasks(selectedIds);
+    setSelectedIds([]);    // clear selection
+    fetchTasks();
+  };
+  const handleBulkComplete = async () => {
+    await handleDone();    // no id => uses selectedIds
+    setSelectedIds([]);    // clear selection
   };
 
   const handleDone = async (id = null) => {
@@ -177,8 +187,11 @@ export default function TaskAssigningPage() {
 
   // Search filter
   const filteredTasks = tasks.filter((t) =>
-    t.title.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
-    t.location.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    // 1) only keep tasks whose status matches the current tab
+    t.status === selectedTab &&
+    // 2) then apply your title/location search
+    (t.title.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+      t.location.toLowerCase().includes(searchQuery.trim().toLowerCase()))
   );
 
   // Single task card
@@ -206,8 +219,8 @@ export default function TaskAssigningPage() {
       const scaleX = dims.width / 640;
       const scaleY = dims.height / 640;
       const x1 = m.X1_loc * scaleX, y1 = m.Y1_loc * scaleY;
-      const w  = (m.X2_loc - m.X1_loc) * scaleX;
-      const h  = (m.Y2_loc - m.Y1_loc) * scaleY;
+      const w = (m.X2_loc - m.X1_loc) * scaleX;
+      const h = (m.Y2_loc - m.Y1_loc) * scaleY;
       return (
         <div
           key={m.id}
@@ -345,10 +358,12 @@ export default function TaskAssigningPage() {
         <Input
           icon={
             searchQuery
-              ? { name: "close", link: true, onClick: () => {
+              ? {
+                name: "close", link: true, onClick: () => {
                   setSearchQuery("");
                   setCurrentPage(1);
-                }}
+                }
+              }
               : "search"
           }
           placeholder="Search by title or location..."
@@ -359,6 +374,32 @@ export default function TaskAssigningPage() {
           }}
           style={{ marginBottom: 20, width: "100%" }}
         />
+
+        {/* Bulk actions for workers */}
+        {!isStaff && selectedIds.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            {/* only show “Start Selected” on the Assigned tab */}
+            {selectedTab === "assigned" && (
+              <Button
+                color="orange"
+                onClick={handleBulkStart}
+              >
+                ▶️ Start Selected
+              </Button>
+            )}
+
+            {/* only show “Complete Selected” on the In Progress tab */}
+            {selectedTab === "in_progress" && (
+              <Button
+                color="green"
+                onClick={handleBulkComplete}
+                style={{ marginLeft: selectedTab === "assigned" ? "0.5rem" : "0" }}
+              >
+                ✅ Complete Selected
+              </Button>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <Loader active inline="centered" size="large" />
