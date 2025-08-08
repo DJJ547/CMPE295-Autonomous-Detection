@@ -26,7 +26,7 @@ const PieChartComponent = ({ data }) => {
           <Pie
             data={data}
             dataKey="count"
-            nameKey="date"
+            nameKey="name"
             cx="50%"
             cy="50%"
             outerRadius={150}

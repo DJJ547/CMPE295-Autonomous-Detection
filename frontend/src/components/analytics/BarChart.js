@@ -41,13 +41,28 @@ const BarChartComponent = ({ data }) => {
           <BarChart
             data={data}
             margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+            barCategoryGap="50%" // leave half the category empty
+            barGap={8} // 8px between bars if you had multiple series
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
+            <XAxis
+              dataKey="date"
+              type="number"
+              scale="time"
+              domain={["auto", "auto"]}
+              tickFormatter={(ts) =>
+                new Date(ts).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              }
+            />
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="count" fill="#3b82f6" />
+
+            {/* force each bar to be 10px wide */}
+            <Bar dataKey="count" barSize={6} fill="#3b82f6" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -56,4 +71,3 @@ const BarChartComponent = ({ data }) => {
 };
 
 export default BarChartComponent;
-

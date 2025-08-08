@@ -1,48 +1,54 @@
-
-# routes/graphs_api.py
-
-from flask import Blueprint, request, jsonify
+# routes/graphs_api.py  (or wherever your chart-data lives)
+from flask import Blueprint, jsonify, request
+from extensions import db
+from mysql_models import DetectionEvent, DetectionImage, DetectionMetadata
 from sqlalchemy import func
-from sqlalchemy.orm import aliased
-from mysql_models import db, DetectionMetadata, DetectionImage, DetectionEvent
+from datetime import datetime, timedelta
 
-graphs_bp = Blueprint("graphs", __name__)
+graphs_bp = Blueprint("graphs", __name__, url_prefix="/api")
 
-
-@graphs_bp.route("/api/chart-data", methods=["GET"])
+@graphs_bp.route("/chart-data", methods=["GET"])
 def get_chart_data():
-    """
-    API endpoint to retrieve anomaly count by date for a given type.
-    Query Params:
-        - type: one of ['graffiti', 'tent', 'road damage']
-    """
     anomaly_type = request.args.get("type")
-    print(anomaly_type)
+    start_str   = request.args.get("start")
+    end_str     = request.args.get("end")
 
-    if not anomaly_type:
-        return jsonify({"error": "Missing 'type' query parameter."}), 400
+    # parse dates
+    start_dt = datetime.fromisoformat(start_str) if start_str else None
+    end_dt   = datetime.fromisoformat(end_str)   if end_str   else None
 
-    try:
+    # base query: join metadata→image→event
+    q = (
+        db.session.query(DetectionEvent.timestamp, func.count(DetectionMetadata.id).label("count"))
+        .join(DetectionImage, DetectionImage.event_id == DetectionEvent.id)
+        .join(DetectionMetadata, DetectionMetadata.image_id == DetectionImage.id)
+        .filter(DetectionMetadata.type == anomaly_type)
+    )
 
-        # Aliases for clarity and to avoid accidental re-reference
-        Event = aliased(DetectionEvent)
-        Image = aliased(DetectionImage)
-        Metadata = aliased(DetectionMetadata)
+    # apply filters
+    if start_dt:
+        q = q.filter(DetectionEvent.timestamp >= start_dt)
+    if end_dt:
+        # if they picked the same date, include the full day
+        # otherwise just <= end_dt at midnight
+        cutoff = end_dt + timedelta(days=1) if start_dt == end_dt else end_dt
+        q = q.filter(DetectionEvent.timestamp <= cutoff)
 
-        results = db.session.query(
-            func.date(Event.timestamp).label("date"),
-            func.count().label("count")
-        ).select_from(Metadata) \
-            .join(Image, Image.id == Metadata.image_id) \
-            .join(Event, Event.id == Image.event_id) \
-            .filter(Metadata.type == anomaly_type) \
-            .group_by(func.date(Event.timestamp)) \
-            .order_by(func.date(Event.timestamp)) \
-            .all()
+    # decide grouping key: by hour if same-day, else by date
+    if start_dt and end_dt and start_dt.date() == end_dt.date():
+        # hourly buckets:
+        bucket = func.date_format(DetectionEvent.timestamp, "%Y-%m-%dT%H:00:00")
+    else:
+        # daily buckets:
+        bucket = func.date_format(DetectionEvent.timestamp, "%Y-%m-%dT00:00:00")
 
-        data = [{"date": row.date.strftime(
-            "%Y-%m-%d"), "count": row.count} for row in results]
-        return jsonify(data), 200
+    results = (
+        q.with_entities(bucket.label("bucket"), func.count().label("count"))
+         .group_by(bucket)
+         .order_by(bucket)
+         .all()
+    )
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # build JSON
+    data = [{"date": row.bucket, "count": row.count} for row in results]
+    return jsonify(data), 200

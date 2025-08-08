@@ -24,7 +24,18 @@ const LineChartComponent = ({ data }) => {
       <ResponsiveContainer>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
+          <XAxis
+            dataKey="date"
+            type="number"
+            scale="time"
+            domain={["auto", "auto"]}
+            tickFormatter={(ts) =>
+              new Date(ts).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            }
+          />
           <YAxis />
           <Tooltip />
           <Legend />
