@@ -76,6 +76,7 @@ def stream_all_images(data):
     coords = generate_coordinates(startLat, startLng, endLat, endLng, num_points)
 
     api_key = os.getenv("GOOGLE_API_KEY")
+    print(f"API Key loaded: {'Yes' if api_key else 'No'}")
     bucket_name = os.getenv("S3_BUCKET_NAME")
     s3_stream_root_folder_name = f'user{user_id}-livestream'
     detected_temp_dir = "detected_temp"
@@ -221,6 +222,15 @@ def stream_all_images(data):
                     f"HTTP={code} body={body_snip} URL={response.url if response else streetview_url}"
                 )
 
+
+    # Test API key
+    test_params = {
+        "latlng": "37.7749,-122.4194",  # San Francisco coordinates
+        "key": api_key
+    }
+    test_response = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params=test_params)
+    print(f"Test API response status: {test_response.status_code}")
+    print(f"Test API response: {test_response.json()}")
 
 def handle_detection_result(
     detected, output, image_name, response_content, detected_temp_dir,
