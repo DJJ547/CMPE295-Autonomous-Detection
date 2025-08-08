@@ -67,3 +67,9 @@ celerybeat-schedule
 # Ignore temporary files
 *.swp
 *.swo
+
+# Detection models and datasets
+#detection_models/run_inference_and_save.ipynb
+detection_models/validation_dataset/
+run_inference_and_save.ipynb
+detection_models/model_prediction/
