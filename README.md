@@ -103,6 +103,20 @@ Watch a quick demo showcasing **StreetGuard** in action:
 
 ![System Architecture](./readme/architecture.png)
 
+## 📊 Model Performance
+
+### Precision Comparison
+![Precision](./readme/precision.png)
+
+### Recall Comparison
+![Recall](./readme/recall.png)
+
+### F1 Score Comparison
+![F1 Score](./readme/f1.png)
+
+Our evaluation shows that the **open-set hybrid pipeline (GroundingDINO + BLIP + CrossEncoder)** consistently outperforms standalone models and the YOLOv8 baseline in terms of precision and balanced effectiveness. By adding a semantic validation layer, the pipeline dramatically reduces false positives—achieving precision of ~0.72 for tents and ~0.68 for graffiti—while still maintaining competitive F1 scores. Although recall drops due to stricter filtering, the overall reliability and consistency of this hybrid approach make it more practical for real-world deployment, where accurate and trustworthy alerts are critical for municipal operations.
+
+
 ## 🛠️ Technology Stack
 
 ### **Frontend Technologies**
