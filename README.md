@@ -103,6 +103,13 @@ Watch a quick demo showcasing **StreetGuard** in action:
 
 ![System Architecture](./readme/architecture.png)
 
+## 🔄 Model Pipeline Workflow
+
+![Model Pipeline](./readme/model.png)
+
+Our detection workflow combines multiple AI models in a hybrid pipeline to balance flexibility, precision, and speed. The process begins with **GroundingDINO or OWL-ViT**, which perform zero-shot anomaly detection using natural language prompts. Detected regions are then passed to **BLIP**, which generates captions, and a **CrossEncoder** validates the semantic alignment between the caption and the target label. This semantic filtering step significantly reduces false positives by discarding ambiguous detections. In parallel, specialized **YOLOv8 models** handle common recurring issues such as graffiti, road damage, and encampments, providing high-speed and accurate results. Together, this workflow ensures reliable detection of both known and novel hazards, enabling real-time and scalable urban maintenance monitoring:contentReference[oaicite:0]{index=0}.
+
+
 ## 📊 Model Performance
 
 ### Precision Comparison
