@@ -72,28 +72,17 @@ StreetGuard introduces a novel hybrid detection pipeline combining:
 - Task assignment and progress monitoring
 - Performance metrics and system health monitoring
 
+## ​ Demo Video
+
+Watch a quick demo showcasing **StreetGuard** in action:
+
+[![Watch the demo on Google Drive](https://img.shields.io/badge/Google%20Drive-Demo-blue?logo=google-drive)](https://drive.google.com/file/d/1bS_jNG-ncj8WxWTqgNd1MBV1Yk-XTiQc/view?usp=drive_link)
+
+> Note: Clicking the badge will open the demo video in Google Drive.
+
 ## 🏗️ System Architecture
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend│    │  Flask Backend  │    │   AI Detection  │
-│                 │◄──►│                 │◄──►│     Models      │
-│ • Interactive   │    │ • RESTful APIs  │    │ • GroundingDINO │
-│   Maps         │    │ • Socket.IO     │    │ • OWL-ViT       │
-│ • Live Stream  │    │ • LLM Services  │    │ • YOLOv8        │
-│ • Analytics    │    │ • Stream Mgmt   │    │ • BLIP + CE     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   MySQL Database│    │   Redis Cache   │    │   AWS S3       │
-│                 │    │                 │    │                 │
-│ • User Mgmt     │    │ • Session Data  │    │ • Image Storage │
-│ • Detection     │    │ • LLM Results   │    │ • Stream Data  │
-│   Events        │    │ • Performance   │    │ • Anomaly      │
-│ • Task Mgmt     │    │   Metrics       │    │   Images       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+![System Architecture](./readme/architecture.png)
 
 ## 🛠️ Technology Stack
 
@@ -248,31 +237,165 @@ POST /api/stream/start
 
 ## 📚 API Documentation
 
-### **Authentication Endpoints**
+StreetGuard provides a comprehensive RESTful API for urban anomaly detection, task management, and analytics. All endpoints are prefixed with `/api` unless otherwise specified.
 
-- `POST /api/auth/signup` - User registration
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/logout` - User logout
+### **Authentication & User Management**
 
-### **Detection Endpoints**
+| Endpoint        | Method | Description         | Request Body                                                                             | Response                                                                                                                                          |
+| --------------- | ------ | ------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/auth/signup/` | POST   | User registration   | `{"email": "string", "password": "string", "firstname": "string", "lastname": "string"}` | `{"message": "Signup successful"}`                                                                                                                |
+| `/auth/login/`  | POST   | User authentication | `{"email": "string", "password": "string"}`                                              | `{"id": int, "message": "Login successful", "email": "string", "firstname": "string", "lastname": "string", "role": "string", "token": "string"}` |
 
-- `GET /api/anomalies` - Retrieve detection events
-- `POST /api/stream/start` - Initialize detection stream
-- `GET /api/heatmap/data` - Get heatmap visualization data
+### **Anomaly Detection & Mapping**
 
-### **Analytics Endpoints**
+| Endpoint                            | Method | Description                                 | Query Parameters     | Response                                                |
+| ----------------------------------- | ------ | ------------------------------------------- | -------------------- | ------------------------------------------------------- |
+| `/anomalies`                        | GET    | Retrieve all detection events with metadata | None                 | Array of events with nested images and metadata         |
+| `/anomalies/<event_id>`             | DELETE | Delete specific detection event             | `event_id` (path)    | `{"message": "Event and its related tasks deleted"}`    |
+| `/anomalies/images/<image_id>`      | DELETE | Delete specific detection image             | `image_id` (path)    | `{"message": "Image and its related tasks deleted"}`    |
+| `/anomalies/metadata/<metadata_id>` | DELETE | Delete specific detection metadata          | `metadata_id` (path) | `{"message": "Metadata and its related tasks deleted"}` |
+| `/anomalies/stats`                  | GET    | Get anomaly type statistics                 | None                 | `{"road_damage": int, "graffiti": int, "tent": int}`    |
 
-- `GET /api/analytics/summary` - System performance summary
-- `POST /api/llm/query` - AI-powered data analysis
-- `GET /api/analytics/trends` - Historical trend data
+### **Heatmap & Visualization**
 
-### **Task Management**
+| Endpoint        | Method | Description                        | Query Parameters                                     | Response                                                                 |
+| --------------- | ------ | ---------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+| `/heatmap/data` | GET    | Get heatmap data for visualization | `type` (optional): `graffiti`, `tent`, `road damage` | Array of `{"lat": float, "lng": float, "weight": int, "type": "string"}` |
 
-- `GET /api/tasks` - Retrieve maintenance tasks
-- `PUT /api/tasks/{id}` - Update task status
-- `POST /api/tasks/assign` - Assign tasks to workers
+### **Analytics & Charts**
 
-For complete API documentation, see [API_REFERENCE.md](docs/API_REFERENCE.md)
+| Endpoint      | Method | Description                | Query Parameters                                           | Response                                    |
+| ------------- | ------ | -------------------------- | ---------------------------------------------------------- | ------------------------------------------- |
+| `/chart-data` | GET    | Get time-series chart data | `type`: anomaly type, `start`: start date, `end`: end date | Array of `{"date": "string", "count": int}` |
+
+### **AI-Powered Intelligence (LLM)**
+
+| Endpoint         | Method | Description                          | Request Body                                 | Response              |
+| ---------------- | ------ | ------------------------------------ | -------------------------------------------- | --------------------- |
+| `/llm-query`     | POST   | AI-powered data analysis             | `{"context": "string", "message": "string"}` | `{"reply": "string"}` |
+| `/llm-summarize` | POST   | Generate automated anomaly summaries | None                                         | `{"reply": "string"}` |
+
+### **Staff Task Management**
+
+| Endpoint                 | Method | Description                | Query Parameters                                           | Request Body                             | Response                                                                           |
+| ------------------------ | ------ | -------------------------- | ---------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| `/tasks`                 | GET    | Get paginated task list    | `page`, `per_page`, `status`, `worker_id`, `sort`, `order` | None                                     | Paginated tasks with metadata                                                      |
+| `/tasks/<task_id>`       | PUT    | Update specific task       | `task_id` (path)                                           | `{"status": "string", "worker_id": int}` | `{"message": "Task updated successfully", "task_id": int}`                         |
+| `/tasks/bulk`            | PUT    | Bulk update multiple tasks | None                                                       | Array of task updates                    | Array of update results                                                            |
+| `/tasks/getWorkers`      | GET    | Get available workers      | None                                                       | None                                     | Array of worker objects                                                            |
+| `/tasks/<task_id>/label` | PUT    | Update task label          | `task_id` (path)                                           | `{"label": "string"}`                    | `{"message": "Label updated successfully", "task_id": int, "new_label": "string"}` |
+
+### **Worker Task Management**
+
+| Endpoint            | Method | Description                  | Query Parameters | Request Body                          | Response                   |
+| ------------------- | ------ | ---------------------------- | ---------------- | ------------------------------------- | -------------------------- |
+| `/getAssignedTasks` | GET    | Get tasks assigned to worker | `user_id`        | None                                  | Array of assigned tasks    |
+| `/startTasks`       | POST   | Mark tasks as in progress    | None             | `{"task_ids": [int], "user_id": int}` | Summary of updated tasks   |
+| `/completeTasks`    | POST   | Mark tasks as completed      | None             | `{"task_ids": [int], "user_id": int}` | Summary of completed tasks |
+
+### **Real-Time Communication (Socket.IO)**
+
+| Event          | Direction       | Description                 | Data Payload                                                                                                                                        | Response                                             |
+| -------------- | --------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `start_stream` | Client → Server | Initialize detection stream | `{"userId": int, "startLatInput": float, "startLngInput": float, "endLatInput": float, "endLngInput": float, "num_points": int, "model": "string"}` | Stream of detection results with images and metadata |
+
+### **Response Status Codes**
+
+| Code | Description           |
+| ---- | --------------------- |
+| 200  | Success               |
+| 201  | Created               |
+| 400  | Bad Request           |
+| 401  | Unauthorized          |
+| 404  | Not Found             |
+| 409  | Conflict              |
+| 500  | Internal Server Error |
+
+### **Data Models**
+
+#### **Detection Event**
+
+```json
+{
+  "id": "int",
+  "latitude": "string",
+  "longitude": "string",
+  "timestamp": "ISO 8601 string",
+  "street": "string",
+  "city": "string",
+  "state": "string",
+  "zipcode": "string",
+  "images": ["DetectionImage"]
+}
+```
+
+#### **Detection Image**
+
+```json
+{
+  "id": "int",
+  "direction": "string (front|back|left|right)",
+  "image_url": "string (S3 URL)",
+  "metadatas": ["DetectionMetadata"]
+}
+```
+
+#### **Detection Metadata**
+
+```json
+{
+  "id": "int",
+  "X1_loc": "float",
+  "Y1_loc": "float",
+  "X2_loc": "float",
+  "Y2_loc": "float",
+  "label": "string",
+  "score": "float",
+  "type": "string (graffiti|tent|road_damage)",
+  "caption": "string"
+}
+```
+
+#### **Task**
+
+```json
+{
+  "task_id": "int",
+  "status": "string (created|assigned|in_progress|completed)",
+  "worker_id": "int",
+  "notes": "string",
+  "scheduled_time": "ISO 8601 string",
+  "created_at": "ISO 8601 string",
+  "updated_at": "ISO 8601 string"
+}
+```
+
+### **Query Parameters Reference**
+
+#### **Pagination**
+
+- `page`: Page number (default: 1)
+- `per_page`: Items per page (default: 10)
+
+#### **Filtering**
+
+- `status`: Task status filter
+- `worker_id`: Filter by assigned worker
+- `type`: Anomaly type filter for heatmaps
+
+#### **Sorting**
+
+- `sort`: Sort field (`created_at`, `updated_at`, `scheduled_time`)
+- `order`: Sort order (`asc` or `desc`)
+
+### **Rate Limiting & Authentication**
+
+- **Authentication**: JWT tokens required for protected endpoints
+- **Token Expiry**: 24 hours from issuance
+- **Rate Limiting**: Currently no rate limiting implemented
+- **CORS**: Enabled for cross-origin requests
+
+For complete API documentation and examples, see [API_REFERENCE.md](docs/API_REFERENCE.md)
 
 ## 📊 Performance Metrics
 
