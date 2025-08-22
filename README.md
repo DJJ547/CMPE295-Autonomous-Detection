@@ -72,6 +72,25 @@ StreetGuard introduces a novel hybrid detection pipeline combining:
 - Task assignment and progress monitoring
 - Performance metrics and system health monitoring
 
+## 📸 Demo Images
+
+### **Dashboard**
+![Dashboard](./readme/dashboard.png)  
+*Interactive map with markers and live stream window.*
+
+### **Anomaly Page**
+![Anomaly](./readme/anomaly.png)  
+*Detection events with detailed anomaly information.*
+
+### **Analytics**
+![Analytics](./readme/analytics.png)  
+*LLM chatbot assistant, heatmap visualization, and analytics graphs.*
+
+### **Task Management**
+![Tasks](./readme/tasks.png)  
+*Task assigning, tracking, and completion workflow.*
+
+
 ## ​ Demo Video
 
 Watch a quick demo showcasing **StreetGuard** in action:
