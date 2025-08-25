@@ -353,6 +353,9 @@ StreetGuard provides a comprehensive RESTful API for urban anomaly detection, ta
 
 ### **Data Models**
 
+![ERD](./readme/erd.png)  
+*MySQL ER Diagram*
+
 #### **Detection Event**
 
 ```json
